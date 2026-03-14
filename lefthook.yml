@@ -1,0 +1,10 @@
+pre-commit:
+  commands:
+    swift-build:
+      run: swift build 2>&1
+      stage_fixed: true
+
+commit-msg:
+  commands:
+    conventional-commit:
+      run: bash scripts/commit-msg.sh {1}

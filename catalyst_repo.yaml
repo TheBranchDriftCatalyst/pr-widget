@@ -1,0 +1,29 @@
+version: "0.1.1"
+name: "pr-widget"
+description: "Native macOS floating dashboard for GitHub PR management with urgency scoring and quick actions"
+repo_url: "https://github.com/TheBranchDriftCatalyst/pr-widget"
+
+status: "wip"
+
+tech_stack:
+  languages:
+    - "swift"
+  frameworks:
+    - "swiftui"
+    - "appkit"
+  tools:
+    - "spm"
+    - "xcodegen"
+    - "github-graphql"
+
+groups:
+  - "developer-tools"
+
+badges:
+  stars: true
+  issues: true
+
+highlights:
+  - "Floating NSPanel stays visible across all Spaces"
+  - "Smart urgency scoring for PR prioritization"
+  - "Direct approve/merge/request-changes from widget"

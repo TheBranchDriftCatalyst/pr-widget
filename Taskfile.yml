@@ -1,0 +1,222 @@
+version: "3"
+
+vars:
+  APP_NAME: "P-Arr"
+  BUNDLE_ID: com.catalyst.p-arr
+  BUILD_DIR: .build
+  APP_PATH: ".build/P-Arr.app"
+
+tasks:
+  default:
+    desc: Show available tasks
+    cmds:
+      - task --list-all
+
+  build:
+    desc: Build the app (debug)
+    cmds:
+      - swift build 2>&1
+    sources:
+      - PRWidget/**/*.swift
+      - Package.swift
+
+  build:release:
+    desc: Build the app (release, optimized)
+    cmds:
+      - swift build -c release 2>&1
+    sources:
+      - PRWidget/**/*.swift
+      - Package.swift
+
+  bundle:
+    desc: Assemble .app bundle from debug build
+    deps: [build]
+    cmds:
+      - BUILD_DIR=.build/debug ./scripts/bundle.sh
+
+  bundle:release:
+    desc: Assemble .app bundle from release build
+    deps: [build:release]
+    cmds:
+      - BUILD_DIR=.build/release ./scripts/bundle.sh
+
+  run:
+    desc: Build, bundle, and run the app
+    deps: [bundle]
+    cmds:
+      - |
+        # Kill existing instance
+        pkill -x PArr 2>/dev/null || true
+        sleep 0.3
+        open "{{.APP_PATH}}"
+        echo "✅ P-Arr launched"
+
+  dev:
+    desc: Development mode with live reload on file changes
+    cmds:
+      - |
+        echo "🔄 Starting PR Widget dev mode..."
+        echo "   Watching PRWidget/ for changes"
+        echo "   Press Ctrl+C to stop"
+        echo ""
+
+        # Initial build + run
+        task run
+
+        echo ""
+        echo "━━━ Watching for changes... ━━━"
+
+        # Watch for changes and rebuild
+        fswatch -o -r \
+          --include='\.swift$' \
+          --include='\.plist$' \
+          --exclude='\.build' \
+          PRWidget/ Package.swift \
+        | while read -r _; do
+          echo ""
+          echo "━━━ $(date +%H:%M:%S) Change detected — rebuilding... ━━━"
+          # Debounce: drain pending events
+          sleep 0.5
+
+          if task run 2>&1; then
+            echo "━━━ ✅ Rebuilt successfully — watching... ━━━"
+          else
+            echo "━━━ ⚠️  Build failed — watching for fix... ━━━"
+          fi
+        done
+
+  test:
+    desc: Run unit tests
+    cmds:
+      - swift test 2>&1
+
+  clean:
+    desc: Clean build artifacts
+    cmds:
+      - swift package clean
+      - rm -rf "{{.APP_PATH}}"
+      - rm -rf PRWidget.xcodeproj
+      - echo "✅ Cleaned build artifacts"
+
+  generate:
+    desc: Generate Xcode project (for IDE use)
+    cmds:
+      - xcodegen generate
+    sources:
+      - project.yml
+
+  open:
+    desc: Open in Xcode (generates xcodeproj first)
+    deps: [generate]
+    cmds:
+      - open PRWidget.xcodeproj
+
+  lint:
+    desc: Run SwiftLint (if installed)
+    cmds:
+      - swiftlint lint PRWidget/ || echo "SwiftLint not installed, skipping"
+
+  setup:
+    desc: Install development dependencies
+    cmds:
+      - brew install fswatch xcbeautify lefthook git-cliff 2>/dev/null || true
+      - swift package resolve
+      - |
+        if git rev-parse --git-dir &>/dev/null 2>&1; then
+          lefthook install
+          echo "✅ Git hooks installed"
+        else
+          echo "⚠️  No git repo — run 'git init' then 'lefthook install'"
+        fi
+      - echo ""
+      - echo "✅ Setup complete!"
+      - echo "   Run 'task dev' for live-reload development"
+      - echo "   Run 'task open' to work in Xcode"
+
+  # ── Version management ──────────────────────────────────────
+
+  version:
+    desc: Show current version
+    cmds:
+      - |
+        VER=$(tr -d '[:space:]' < VERSION)
+        if git rev-parse --git-dir &>/dev/null 2>&1; then
+          BUILD=$(git rev-list --count HEAD 2>/dev/null || echo "0")
+        else
+          BUILD="0"
+        fi
+        echo "Version: ${VER} (build ${BUILD})"
+
+  version:check:
+    desc: Verify VERSION file and project.yml are in sync
+    cmds:
+      - |
+        VER=$(tr -d '[:space:]' < VERSION)
+        PROJ_VER=$(grep 'MARKETING_VERSION:' project.yml | head -1 | sed 's/.*"\(.*\)".*/\1/')
+        if [[ "$VER" == "$PROJ_VER" ]]; then
+          echo "✅ Versions in sync: ${VER}"
+        else
+          echo "❌ Version mismatch!"
+          echo "   VERSION file:  ${VER}"
+          echo "   project.yml:   ${PROJ_VER}"
+          exit 1
+        fi
+
+  version:bump:
+    desc: "Bump version (usage: task version:bump -- patch|minor|major)"
+    cmds:
+      - |
+        BUMP="${1:-patch}"
+        CURRENT=$(tr -d '[:space:]' < VERSION)
+        IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
+
+        case "$BUMP" in
+          major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
+          minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
+          patch) PATCH=$((PATCH + 1)) ;;
+          *) echo "Usage: task version:bump -- patch|minor|major"; exit 1 ;;
+        esac
+
+        NEW="${MAJOR}.${MINOR}.${PATCH}"
+        echo "$NEW" > VERSION
+
+        # Update project.yml
+        sed -i '' "s/MARKETING_VERSION: \"${CURRENT}\"/MARKETING_VERSION: \"${NEW}\"/" project.yml
+
+        echo "✅ Bumped ${CURRENT} → ${NEW}"
+
+  changelog:
+    desc: Generate CHANGELOG.md from conventional commits
+    cmds:
+      - git-cliff -o CHANGELOG.md
+      - echo "✅ CHANGELOG.md generated"
+
+  release:
+    desc: "Cut a release (usage: task release -- patch|minor|major)"
+    cmds:
+      - |
+        BUMP="${1:-patch}"
+        task version:bump -- "$BUMP"
+        VER=$(tr -d '[:space:]' < VERSION)
+        task changelog
+        git add VERSION project.yml CHANGELOG.md
+        git commit -m "chore(release): v${VER}"
+        git tag "v${VER}"
+        echo ""
+        echo "✅ Released v${VER}"
+        echo "   Tag: v${VER}"
+
+  release:patch:
+    desc: "Release a patch version (bugfix)"
+    cmds:
+      - task release -- patch
+
+  release:minor:
+    desc: "Release a minor version (new features)"
+    cmds:
+      - task release -- minor
+
+  release:major:
+    desc: "Release a major version (breaking changes)"
+    cmds:
+      - task release -- major
