@@ -179,7 +179,8 @@ tasks:
     desc: "Bump version (usage: task version:bump -- patch|minor|major)"
     cmds:
       - |
-        BUMP="${1:-patch}"
+        BUMP="{{.CLI_ARGS}}"
+        BUMP="${BUMP:-patch}"
         CURRENT=$(tr -d '[:space:]' < VERSION)
         IFS='.' read -r MAJOR MINOR PATCH <<< "$CURRENT"
 
@@ -208,7 +209,8 @@ tasks:
     desc: "Cut a release (usage: task release -- patch|minor|major)"
     cmds:
       - |
-        BUMP="${1:-patch}"
+        BUMP="{{.CLI_ARGS}}"
+        BUMP="${BUMP:-patch}"
         task version:bump -- "$BUMP"
         VER=$(tr -d '[:space:]' < VERSION)
         task changelog
