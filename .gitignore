@@ -33,6 +33,22 @@ Package.resolved
 .beads/
 .task/
 .claude-context/
+.claude/
+
+# Secrets (defensive)
+.env
+.env.*
+*.pem
+*.key
+*.p12
+*.pfx
+credentials.json
+secrets.yml
+secrets.yaml
+
+# Editor swap files
+*.swp
+*~
 
 # Submodules (don't ignore)
 !homebrew-catalyst/
