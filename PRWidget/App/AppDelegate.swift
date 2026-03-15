@@ -71,8 +71,19 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         if accountManager.hasAccounts {
             Task {
                 await dashboardStore.refresh()
+                mentionTracker.checkForMentions(
+                    prs: dashboardStore.state.pullRequests,
+                    currentUser: dashboardStore.state.currentUser
+                )
+                updateBadge()
                 pollingScheduler.start { [weak self] in
-                    await self?.dashboardStore.refresh()
+                    guard let self else { return }
+                    await self.dashboardStore.refresh()
+                    self.mentionTracker.checkForMentions(
+                        prs: self.dashboardStore.state.pullRequests,
+                        currentUser: self.dashboardStore.state.currentUser
+                    )
+                    self.updateBadge()
                 }
             }
         }
@@ -82,7 +93,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "PR Widget")
+            let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "P-Arr")
             image?.isTemplate = true
             button.image = image
             button.action = #selector(statusItemClicked(_:))
@@ -268,9 +279,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let diffY = mainFrame.minY              // match bottom (same top since same height)
             let diffHeight = mainFrame.height        // match main panel height
 
-            // Clamp to screen bounds
+            // Clamp to the screen the main panel is on (multi-monitor safe)
             var finalX = diffX
-            if let screen = NSScreen.main {
+            let panelScreen = NSScreen.screens.first(where: { $0.frame.intersects(mainFrame) })
+            if let screen = panelScreen ?? NSScreen.main {
                 let screenFrame = screen.visibleFrame
                 finalX = max(finalX, screenFrame.minX)
             }
