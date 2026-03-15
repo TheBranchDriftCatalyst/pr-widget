@@ -3,6 +3,7 @@ import CatalystSwift
 
 struct DashboardHeaderBar: View {
     @Environment(PollingScheduler.self) private var polling
+    @Environment(BrewSelfUpdater.self) private var updater
 
     let lastRefreshed: Date?
     let isLoading: Bool
@@ -99,16 +100,42 @@ struct DashboardHeaderBar: View {
             .accessibilityIdentifier(AccessibilityID.pinButton)
             .help(isPinned ? "Unpin window" : "Pin window on top")
 
-            Button("Settings", systemImage: "gearshape", action: onOpenSettings)
-                .labelStyle(.iconOnly)
-                .buttonStyle(.borderless)
-                .foregroundStyle(Catalyst.muted)
-                .accessibilityIdentifier(AccessibilityID.settingsButton)
+            Button(action: onOpenSettings) {
+                ZStack(alignment: .topTrailing) {
+                    Image(systemName: "gearshape")
+                        .foregroundStyle(Catalyst.muted)
+                    updateDot
+                }
+            }
+            .buttonStyle(.borderless)
+            .accessibilityIdentifier(AccessibilityID.settingsButton)
+            .help(updater.updateAvailable ? "Update available: v\(updater.latestVersion ?? "")" : "Settings")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .glassCard()
         .accessibilityIdentifier(AccessibilityID.dashboardHeaderBar)
+        .task { await updater.checkForUpdate() }
+    }
+
+    @ViewBuilder
+    private var updateDot: some View {
+        if updater.isChecking {
+            // Checking — no dot
+            EmptyView()
+        } else if updater.updateAvailable {
+            Circle()
+                .fill(Catalyst.cyan)
+                .frame(width: 7, height: 7)
+                .offset(x: 3, y: -3)
+        } else if updater.latestVersion != nil {
+            // Checked and up to date
+            Circle()
+                .fill(Catalyst.approved)
+                .frame(width: 6, height: 6)
+                .offset(x: 3, y: -3)
+        }
+        // If never checked (latestVersion == nil and not checking), show nothing
     }
 
     private func countBadge(_ count: Int, color: Color, icon: String, label: String) -> some View {

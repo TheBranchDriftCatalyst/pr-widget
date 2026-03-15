@@ -145,6 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         .environment(synopsisEngine)
         .environment(mentionTracker)
         .environment(pollingScheduler)
+        .environment(brewUpdater)
         .modifier(TextScaleModifier())
 
         windowManager = WindowManager(contentView: contentView)
