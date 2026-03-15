@@ -8,6 +8,15 @@ struct PRRowView: View {
     @Environment(DashboardStore.self) private var store
     @Environment(AccountManager.self) private var accountManager
 
+    private var prAccessibilityLabel: String {
+        var parts = [pr.title, pr.repository.nameWithOwner, "number \(pr.number)"]
+        if pr.isDraft { parts.append("draft") }
+        parts.append("CI \(pr.statusCheckRollup.rawValue.lowercased())")
+        parts.append("age \(pr.ageText)")
+        if pr.mergeable == .conflicting { parts.append("has conflicts") }
+        return parts.joined(separator: ", ")
+    }
+
     var body: some View {
         Button {
             NSWorkspace.shared.open(pr.url)
@@ -15,6 +24,7 @@ struct PRRowView: View {
             HStack(spacing: 0) {
                 // Left accent border — neon stripe
                 GradientAccentStripe(color: accentColor)
+                    .accessibilityHidden(true)
 
                 VStack(alignment: .leading, spacing: 4) {
                     // Title row
@@ -84,7 +94,8 @@ struct PRRowView: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(AccessibilityID.prRow(id: pr.id))
-        .accessibilityLabel("\(pr.title), \(pr.repository.nameWithOwner) number \(pr.number)")
+        .accessibilityLabel(prAccessibilityLabel)
+        .accessibilityHint("Opens pull request in browser")
         .hoverGlow(accentColor)
         .contextMenu {
             Button("Open in Browser") {

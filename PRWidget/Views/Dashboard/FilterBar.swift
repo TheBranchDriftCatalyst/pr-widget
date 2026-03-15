@@ -70,6 +70,9 @@ private struct FilterChip: View {
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(AccessibilityID.filterChip(name: title))
+        .accessibilityLabel("\(title) filter")
+        .accessibilityHint(isActive ? "Currently selected" : "Double-tap to filter")
+        .accessibilityAddTraits(isActive ? .isSelected : [])
     }
 
     private var accentColor: Color {
