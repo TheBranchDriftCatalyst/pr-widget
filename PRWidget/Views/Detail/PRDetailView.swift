@@ -5,11 +5,15 @@ struct PRDetailView: View {
     let pr: PullRequest
 
     @Environment(DashboardStore.self) var store
+    @Environment(AccountManager.self) var accountManager
     @Environment(SynopsisEngine.self) var synopsisEngine
     @Environment(\.dismiss) private var dismiss
     @State private var detail: PRDetail?
     @State private var synopsis: AISynopsis?
     @State private var isLoadingDetail = true
+    @State private var actionError: String?
+
+    private let actionHandler = ActionHandler()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -50,6 +54,11 @@ struct PRDetailView: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     detailHeader
                     GlowDivider()
+
+                    if pr.state == .open && !pr.isDraft {
+                        quickActionsSection
+                        GlowDivider()
+                    }
 
                 if isLoadingDetail {
                     loadingView
@@ -172,6 +181,28 @@ struct PRDetailView: View {
             .shadow(color: color.opacity(0.4), radius: 3)
     }
 
+    // MARK: - Quick Actions
+
+    private var quickActionsSection: some View {
+        VStack(spacing: 4) {
+            QuickActionsView(
+                pr: pr,
+                onApprove: { Task { await performApprove() } },
+                onMerge: { method in Task { await performMerge(method: method) } },
+                onRequestChanges: { comment in Task { await performRequestChanges(comment: comment) } }
+            )
+            .padding(12)
+
+            if let actionError {
+                Text(actionError)
+                    .font(.system(size: 10, design: .monospaced))
+                    .foregroundStyle(Catalyst.red)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            }
+        }
+    }
+
     // MARK: - Synopsis
 
     private var synopsisSection: some View {
@@ -278,6 +309,47 @@ struct PRDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+    }
+
+    // MARK: - Actions
+
+    private func performApprove() async {
+        guard let (token, endpoint) = accountCredentials else { return }
+        actionError = nil
+        do {
+            try await actionHandler.approve(pr: pr, comment: nil, token: token, endpoint: endpoint)
+            await store.refresh()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    private func performMerge(method: MergeMethod) async {
+        guard let (token, endpoint) = accountCredentials else { return }
+        actionError = nil
+        do {
+            try await actionHandler.merge(pr: pr, method: method, token: token, endpoint: endpoint)
+            await store.refresh()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    private func performRequestChanges(comment: String) async {
+        guard let (token, endpoint) = accountCredentials else { return }
+        actionError = nil
+        do {
+            try await actionHandler.requestChanges(pr: pr, comment: comment, token: token, endpoint: endpoint)
+            await store.refresh()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    private var accountCredentials: (token: String, endpoint: URL)? {
+        guard let account = accountManager.accounts.first,
+              let token = accountManager.token(for: account) else { return nil }
+        return (token, account.graphQLEndpoint)
     }
 
     // MARK: - Data Loading
