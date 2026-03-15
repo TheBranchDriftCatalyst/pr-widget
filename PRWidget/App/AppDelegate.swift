@@ -16,6 +16,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let mentionTracker = MentionTracker()
     let pollingScheduler = PollingScheduler()
     private let hotkeyManager = HotkeyManager()
+    let brewUpdater = BrewSelfUpdater(caskName: "p-arr", appName: "PArr")
 
     private enum Keys {
         static let settingsWidth = Persisted<Double>("PArr.settingsWidth", default: 600)
@@ -191,6 +192,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             .environment(accountManager)
             .environment(aiSettings)
             .environment(hotkeyManager)
+            .environment(brewUpdater)
 
         let w = Keys.settingsWidth.load()
         let h = Keys.settingsHeight.load()

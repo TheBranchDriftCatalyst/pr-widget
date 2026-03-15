@@ -5,6 +5,7 @@ struct SettingsView: View {
     @Environment(AccountManager.self) var accountManager
     @Environment(AISettings.self) var aiSettings
     @Environment(HotkeyManager.self) var hotkeyManager
+    @Environment(BrewSelfUpdater.self) var brewUpdater
 
     var body: some View {
         TabView {
@@ -26,6 +27,10 @@ struct SettingsView: View {
             Tab("General", systemImage: "gearshape") {
                 GeneralSettingsView()
                     .environment(hotkeyManager)
+            }
+
+            Tab("Updates", systemImage: "arrow.down.circle") {
+                BrewUpdateView(updater: brewUpdater)
             }
 
             Tab("Changelog", systemImage: "doc.text.magnifyingglass") {
