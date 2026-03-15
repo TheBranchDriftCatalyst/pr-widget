@@ -4,6 +4,20 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Documentation
+
+- Add release process documentation
+
+### Features
+
+- Add UI text scale setting with CatalystSwift UIScale module
+
+### Miscellaneous
+
+- Update homebrew-catalyst to p-arr v0.3.2
+
+## [0.3.2] - 2026-03-15
+
 ### Features
 
 - Add Homebrew self-update via Settings > Updates tab
