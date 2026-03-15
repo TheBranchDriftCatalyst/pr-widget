@@ -38,14 +38,12 @@ struct PRRowView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pr.title)
-                                .scaledFont(size: 14)
-                                .fontWeight(.medium)
+                                .scaledFont(size: 14, weight: .medium)
                                 .foregroundStyle(Catalyst.foreground)
                                 .lineLimit(2)
 
                             Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                                .scaledFont(size: 11)
-                                .fontDesign(.monospaced)
+                                .scaledFont(size: 11, design: .monospaced)
                                 .foregroundStyle(Catalyst.muted)
                         }
 
@@ -75,8 +73,7 @@ struct PRRowView: View {
                             Text("-\(pr.deletions)")
                                 .foregroundStyle(Catalyst.red)
                         }
-                        .scaledFont(size: 11)
-                        .fontDesign(.monospaced)
+                        .scaledFont(size: 11, design: .monospaced)
                     }
 
                     // Labels

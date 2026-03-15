@@ -10,15 +10,11 @@ struct UrgencyBadge: View {
         HStack(spacing: 2) {
             if differentiateWithoutColor, let indicator = urgencyIndicator {
                 Text(indicator)
-                    .scaledFont(size: 10)
-                    .fontWeight(.bold)
-                    .fontDesign(.monospaced)
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .foregroundStyle(urgencyColor)
             }
             Text(ageText)
-                .scaledFont(size: 12)
-                .fontWeight(.medium)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 12, weight: .medium, design: .monospaced)
                 .foregroundStyle(urgencyColor)
         }
         .padding(.horizontal, 6)

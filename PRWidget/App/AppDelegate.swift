@@ -171,9 +171,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             forName: .openDiffPanel,
             object: nil,
             queue: .main
-        ) { @Sendable [weak self] notification in
+        ) { [weak self] notification in
             let pr = notification.userInfo?["pr"] as? PullRequest
-            MainActor.assumeIsolated {
+            Task { @MainActor in
                 guard let self, let pr else { return }
                 self.openDiffPanel(for: pr)
             }
@@ -243,8 +243,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
-        ) { @Sendable [weak window] _ in
-            MainActor.assumeIsolated {
+        ) { [weak window] _ in
+            Task { @MainActor in
                 guard let window else { return }
                 Keys.settingsWidth.save(window.frame.width)
                 Keys.settingsHeight.save(window.frame.height)
