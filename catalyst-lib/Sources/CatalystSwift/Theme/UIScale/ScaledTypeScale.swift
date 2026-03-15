@@ -1,6 +1,6 @@
 import SwiftUI
 
-public enum CatalystFontToken {
+public enum CatalystFontToken: Sendable {
     case display, heading, subheading, body, caption, label, micro, nano
 
     var size: CGFloat {

@@ -26,9 +26,9 @@ final class WindowManager {
         panel.maxSize = NSSize(width: 600, height: 900)
 
         let hostingView = NSHostingView(
-            rootView: contentView.clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+            rootView: contentView.clipShape(.rect(cornerRadius: Catalyst.radiusMD))
         )
-        hostingView.layer?.cornerRadius = Catalyst.cornerRadius
+        hostingView.layer?.cornerRadius = Catalyst.radiusMD
         hostingView.layer?.masksToBounds = true
         hostingView.layer?.borderWidth = 1
         hostingView.layer?.borderColor = NSColor(red: 0.153, green: 0.153, blue: 0.165, alpha: 0.6).cgColor

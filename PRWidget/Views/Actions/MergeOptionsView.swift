@@ -49,7 +49,7 @@ struct MergeOptionsView: View {
                 .padding(.vertical, 4)
                 .padding(.horizontal, 8)
                 .background(
-                    RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                    RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                         .fill(hoveredMethod == method ? Catalyst.surface : Color.clear)
                 )
                 .onHover { isHovering in

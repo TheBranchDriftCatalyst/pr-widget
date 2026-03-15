@@ -162,7 +162,7 @@ struct PRDetailView: View {
                         .foregroundStyle(Catalyst.background)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Catalyst.cyan, in: .rect(cornerRadius: Catalyst.cornerRadius))
+                        .background(Catalyst.cyan, in: .rect(cornerRadius: Catalyst.radiusMD))
                 }
                 .buttonStyle(.plain)
                 .hoverGlow(Catalyst.cyan)
@@ -179,9 +179,9 @@ struct PRDetailView: View {
                         .foregroundStyle(Catalyst.magenta)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
-                        .background(Catalyst.magenta.opacity(0.15), in: .rect(cornerRadius: Catalyst.cornerRadius))
+                        .background(Catalyst.magenta.opacity(0.15), in: .rect(cornerRadius: Catalyst.radiusMD))
                         .overlay(
-                            RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                            RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                                 .strokeBorder(Catalyst.magenta.opacity(0.3), lineWidth: 1)
                         )
                 }

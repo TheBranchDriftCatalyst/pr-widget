@@ -23,9 +23,9 @@ struct UrgencyBadge: View {
         }
         .padding(.horizontal, 6)
         .padding(.vertical, 2)
-        .background(urgencyColor.opacity(0.15), in: RoundedRectangle(cornerRadius: Catalyst.cornerRadius))
+        .background(urgencyColor.opacity(0.15), in: RoundedRectangle(cornerRadius: Catalyst.radiusMD))
         .overlay(
-            RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+            RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                 .strokeBorder(urgencyColor.opacity(0.3), lineWidth: 0.5)
         )
         .shadow(color: urgencyColor.opacity(0.3), radius: 3)

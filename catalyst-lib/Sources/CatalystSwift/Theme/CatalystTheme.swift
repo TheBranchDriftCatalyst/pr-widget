@@ -31,7 +31,7 @@ public enum Catalyst {
     // MARK: - Glass Surface
     public static let glass = Color.white.opacity(0.03)
 
-    // MARK: - Type Scale
+    // MARK: - Type Scale (unscaled — prefer .catalystFont(.token) for scale-aware usage)
     public static func display() -> Font { .system(size: 15, weight: .semibold) }
     public static func heading() -> Font { .system(size: 14, weight: .medium) }
     public static func subheading() -> Font { .system(size: 13, weight: .bold, design: .monospaced) }
@@ -52,6 +52,7 @@ public enum Catalyst {
     // MARK: - Corner Radius
     public static let radiusSM: CGFloat = 3
     public static let radiusMD: CGFloat = 8
+    @available(*, deprecated, renamed: "radiusMD")
     public static let cornerRadius: CGFloat = 8
     public static let radiusFull: CGFloat = 999
 

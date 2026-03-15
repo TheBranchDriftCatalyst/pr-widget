@@ -33,9 +33,9 @@ struct SearchBar: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Catalyst.surface)
-        .clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+        .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
         .overlay(
-            RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+            RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                 .strokeBorder(isFocused.wrappedValue ? Catalyst.cyan.opacity(0.5) : Color.clear, lineWidth: 1)
         )
         .if(isFocused.wrappedValue) { $0.neonGlow(Catalyst.cyan, radius: 4) }

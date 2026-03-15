@@ -96,10 +96,10 @@ struct HotkeyRecorderView: View {
                 .padding(.vertical, 4)
                 .background(
                     isRecording ? Catalyst.warning.opacity(0.15) : Catalyst.cyan.opacity(0.1),
-                    in: .rect(cornerRadius: Catalyst.cornerRadius)
+                    in: .rect(cornerRadius: Catalyst.radiusMD)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                    RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                         .strokeBorder(isRecording ? Catalyst.warning : Catalyst.cyan.opacity(0.3), lineWidth: 1)
                 )
                 .if(isRecording) { $0.neonGlow(Catalyst.warning, radius: 6) }

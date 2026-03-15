@@ -75,7 +75,7 @@ struct SynopsisCard: View {
                     .shadow(color: Catalyst.cyan.opacity(0.3), radius: 2)
                 Spacer()
             }
-            .clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+            .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
         )
     }
 }

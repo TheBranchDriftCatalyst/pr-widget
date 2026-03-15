@@ -11,9 +11,9 @@ public struct GlassCardModifier: ViewModifier {
         content
             .background(reduceTransparency ? AnyShapeStyle(Catalyst.card) : AnyShapeStyle(Catalyst.cardGradient))
             .if(!reduceTransparency) { $0.overlay(Catalyst.glass.allowsHitTesting(false)) }
-            .clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+            .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
             .overlay(
-                RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                     .strokeBorder(Catalyst.border.opacity(0.5), lineWidth: 1)
                     .allowsHitTesting(false)
             )

@@ -22,9 +22,9 @@ struct CommentComposer: View {
                 .scrollContentBackground(.hidden)
                 .background(Catalyst.background.opacity(0.5))
                 .frame(minHeight: 40, maxHeight: 80)
-                .clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+                .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
                 .overlay(
-                    RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                    RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                         .strokeBorder(borderColor, lineWidth: 0.5)
                 )
                 .focused($isFocused)
@@ -68,7 +68,7 @@ struct CommentComposer: View {
                     .background(
                         replyText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
                             ? Catalyst.subtle : Catalyst.cyan,
-                        in: .rect(cornerRadius: Catalyst.cornerRadius)
+                        in: .rect(cornerRadius: Catalyst.radiusMD)
                     )
                 }
                 .buttonStyle(.plain)
