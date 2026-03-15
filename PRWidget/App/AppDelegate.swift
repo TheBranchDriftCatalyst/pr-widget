@@ -67,6 +67,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         setupWindowManager()
         NSLog("[PArr] Window manager set up")
         setupGlobalHotkey()
+        setupDiffPanelObserver()
 
         if accountManager.hasAccounts {
             Task {
@@ -145,9 +146,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 guard let self else { return }
                 self.dashboardStore.isPinned.toggle()
                 self.windowManager.setPinned(self.dashboardStore.isPinned)
-            },
-            onOpenDiffPanel: { [weak self] pr in
-                self?.openDiffPanel(for: pr)
             }
         )
         .environment(dashboardStore)
@@ -165,6 +163,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func setupGlobalHotkey() {
         hotkeyManager.register { [weak self] in
             self?.togglePanel()
+        }
+    }
+
+    private func setupDiffPanelObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .openDiffPanel,
+            object: nil,
+            queue: .main
+        ) { @Sendable [weak self] notification in
+            let pr = notification.userInfo?["pr"] as? PullRequest
+            MainActor.assumeIsolated {
+                guard let self, let pr else { return }
+                self.openDiffPanel(for: pr)
+            }
         }
     }
 

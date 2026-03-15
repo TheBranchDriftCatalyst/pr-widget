@@ -36,7 +36,7 @@ struct DashboardHeaderBar: View {
             }
 
             // Summary counts
-            if blockedByMe > 0 || ownedByMe > 0 || readyForQA > 0 {
+            if blockedByMe > 0 || ownedByMe > 0 || readyToShip > 0 {
                 HStack(spacing: 6) {
                     if blockedByMe > 0 {
                         countBadge(blockedByMe, color: Catalyst.red, icon: "hand.raised.fill", label: "Blocked by you")
@@ -44,8 +44,8 @@ struct DashboardHeaderBar: View {
                     if ownedByMe > 0 {
                         countBadge(ownedByMe, color: Catalyst.cyan, icon: "person.fill", label: "Your PRs")
                     }
-                    if readyForQA > 0 {
-                        countBadge(readyForQA, color: Catalyst.approved, icon: "checkmark.circle.fill", label: "Ready for QA")
+                    if readyToShip > 0 {
+                        countBadge(readyToShip, color: Catalyst.approved, icon: "checkmark.circle.fill", label: "Ready to Ship")
                     }
                 }
             }
@@ -88,7 +88,7 @@ struct DashboardHeaderBar: View {
             .disabled(isLoading)
             .accessibilityIdentifier(AccessibilityID.refreshButton)
             .accessibilityLabel("Refresh")
-            .help(polling.isEnabled ? "Auto-refresh every \(intervalLabel)" : "Refresh")
+            .catalystTooltip(polling.isEnabled ? "Auto-refresh every \(intervalLabel)" : "Refresh")
 
             Button {
                 onTogglePin()
@@ -98,7 +98,7 @@ struct DashboardHeaderBar: View {
             }
             .buttonStyle(.borderless)
             .accessibilityIdentifier(AccessibilityID.pinButton)
-            .help(isPinned ? "Unpin window" : "Pin window on top")
+            .catalystTooltip(isPinned ? "Unpin window" : "Pin window on top")
 
             Button(action: onOpenSettings) {
                 ZStack(alignment: .topTrailing) {
@@ -109,7 +109,7 @@ struct DashboardHeaderBar: View {
             }
             .buttonStyle(.borderless)
             .accessibilityIdentifier(AccessibilityID.settingsButton)
-            .help(updater.updateAvailable ? "Update available: v\(updater.latestVersion ?? "")" : "Settings")
+            .catalystTooltip(updater.updateAvailable ? "Update available: v\(updater.latestVersion ?? "")" : "Settings")
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
@@ -146,6 +146,6 @@ struct DashboardHeaderBar: View {
                 .scaledFont(size: 10, weight: .medium, design: .monospaced)
         }
         .foregroundStyle(color)
-        .help(label)
+        .catalystTooltip(label)
     }
 }

@@ -62,7 +62,7 @@ struct DashboardState: Sendable {
         pullRequests.filter { $0.author.login == currentUser }.count
     }
 
-    var readyForQACount: Int {
+    var readyToShipCount: Int {
         readyToShip.count
     }
 

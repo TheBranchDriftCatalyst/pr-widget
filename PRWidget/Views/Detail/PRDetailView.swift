@@ -153,18 +153,41 @@ struct PRDetailView: View {
                 }
             }
 
-            Button {
-                NSWorkspace.shared.open(pr.url)
-            } label: {
-                Label("Open in GitHub", systemImage: "arrow.up.right")
-                    .scaledFont(size: 11, weight: .medium, design: .monospaced)
-                    .foregroundStyle(Catalyst.background)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Catalyst.cyan, in: .rect(cornerRadius: Catalyst.cornerRadius))
+            HStack(spacing: 8) {
+                Button {
+                    NSWorkspace.shared.open(pr.url)
+                } label: {
+                    Label("Open in GitHub", systemImage: "arrow.up.right")
+                        .scaledFont(size: 11, weight: .medium, design: .monospaced)
+                        .foregroundStyle(Catalyst.background)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Catalyst.cyan, in: .rect(cornerRadius: Catalyst.cornerRadius))
+                }
+                .buttonStyle(.plain)
+                .hoverGlow(Catalyst.cyan)
+
+                Button {
+                    NotificationCenter.default.post(
+                        name: .openDiffPanel,
+                        object: nil,
+                        userInfo: ["pr": pr]
+                    )
+                } label: {
+                    Label("View Diff", systemImage: "doc.text.magnifyingglass")
+                        .scaledFont(size: 11, weight: .medium, design: .monospaced)
+                        .foregroundStyle(Catalyst.magenta)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Catalyst.magenta.opacity(0.15), in: .rect(cornerRadius: Catalyst.cornerRadius))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                                .strokeBorder(Catalyst.magenta.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .hoverGlow(Catalyst.magenta)
             }
-            .buttonStyle(.plain)
-            .hoverGlow(Catalyst.cyan)
         }
         .padding(12)
         .glassCard()

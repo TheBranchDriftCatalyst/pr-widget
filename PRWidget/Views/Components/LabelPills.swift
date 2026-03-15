@@ -14,7 +14,7 @@ struct LabelPill: View {
             .padding(.vertical, 2)
             .background(backgroundColor, in: Capsule())
             .overlay(Capsule().strokeBorder(textColor.opacity(0.3), lineWidth: 0.5))
-            .help(label.description ?? label.name)
+            .catalystTooltip(label.description ?? label.name)
     }
 
     private var backgroundColor: Color {
