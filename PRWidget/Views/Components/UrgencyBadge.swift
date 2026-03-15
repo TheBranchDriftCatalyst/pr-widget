@@ -4,22 +4,33 @@ import CatalystSwift
 struct UrgencyBadge: View {
     let ageText: String
     let urgencyScore: Double
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
-        Text(ageText)
-            .font(.system(size: 12))
-            .fontWeight(.medium)
-            .fontDesign(.monospaced)
-            .foregroundStyle(urgencyColor)
-            .padding(.horizontal, 6)
-            .padding(.vertical, 2)
-            .background(urgencyColor.opacity(0.15), in: RoundedRectangle(cornerRadius: Catalyst.cornerRadius))
-            .overlay(
-                RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
-                    .strokeBorder(urgencyColor.opacity(0.3), lineWidth: 0.5)
-            )
-            .shadow(color: urgencyColor.opacity(0.3), radius: 3)
-            .accessibilityIdentifier(AccessibilityID.urgencyBadge)
+        HStack(spacing: 2) {
+            if differentiateWithoutColor, let indicator = urgencyIndicator {
+                Text(indicator)
+                    .scaledFont(size: 10)
+                    .fontWeight(.bold)
+                    .fontDesign(.monospaced)
+                    .foregroundStyle(urgencyColor)
+            }
+            Text(ageText)
+                .scaledFont(size: 12)
+                .fontWeight(.medium)
+                .fontDesign(.monospaced)
+                .foregroundStyle(urgencyColor)
+        }
+        .padding(.horizontal, 6)
+        .padding(.vertical, 2)
+        .background(urgencyColor.opacity(0.15), in: RoundedRectangle(cornerRadius: Catalyst.cornerRadius))
+        .overlay(
+            RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                .strokeBorder(urgencyColor.opacity(0.3), lineWidth: 0.5)
+        )
+        .shadow(color: urgencyColor.opacity(0.3), radius: 3)
+        .accessibilityIdentifier(AccessibilityID.urgencyBadge)
+        .accessibilityLabel("Age \(ageText), urgency \(urgencyLabel)")
     }
 
     private var urgencyColor: Color {
@@ -27,5 +38,19 @@ struct UrgencyBadge: View {
         if urgencyScore >= 4 { return Catalyst.warning }
         if urgencyScore >= 2 { return Catalyst.yellow }
         return Catalyst.muted
+    }
+
+    private var urgencyIndicator: String? {
+        if urgencyScore >= 6 { return "!!!" }
+        if urgencyScore >= 4 { return "!!" }
+        if urgencyScore >= 2 { return "!" }
+        return nil
+    }
+
+    private var urgencyLabel: String {
+        if urgencyScore >= 6 { return "critical" }
+        if urgencyScore >= 4 { return "high" }
+        if urgencyScore >= 2 { return "moderate" }
+        return "low"
     }
 }

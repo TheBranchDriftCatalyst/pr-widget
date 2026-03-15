@@ -28,13 +28,13 @@ struct FileListSidebar: View {
 
                 VStack(alignment: .leading, spacing: 2) {
                     Text(file.path.components(separatedBy: "/").last ?? file.path)
-                        .font(.system(size: 12, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 12, weight: .medium, design: .monospaced)
                         .foregroundStyle(Catalyst.foreground)
                         .lineLimit(1)
                         .truncationMode(.middle)
 
                     Text(file.path)
-                        .font(.system(size: 9, design: .monospaced))
+                        .scaledFont(size: 9, design: .monospaced)
                         .foregroundStyle(Catalyst.subtle)
                         .lineLimit(1)
                         .truncationMode(.head)
@@ -49,29 +49,29 @@ struct FileListSidebar: View {
                         Text("-\(file.deletions)")
                             .foregroundStyle(Catalyst.red)
                     }
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
 
                     let threadCount = file.reviewThreads.count
                     let unresolvedCount = file.reviewThreads.filter { !$0.isResolved }.count
                     if threadCount > 0 {
                         HStack(spacing: 2) {
                             Image(systemName: "text.bubble.fill")
-                                .font(.system(size: 8))
+                                .scaledFont(size: 8)
                                 .foregroundStyle(Catalyst.blue)
 
                             if unresolvedCount == threadCount {
                                 Text("\(threadCount)")
-                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
                                     .foregroundStyle(Catalyst.blue)
                             } else {
                                 Text("\(unresolvedCount)")
-                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
                                     .foregroundStyle(Catalyst.blue)
                                 Text("/")
-                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
                                     .foregroundStyle(Catalyst.subtle)
                                 Text("\(threadCount)")
-                                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
                                     .foregroundStyle(Catalyst.subtle)
                             }
                         }
@@ -96,7 +96,7 @@ struct FileListSidebar: View {
         }
 
         return Image(systemName: icon)
-            .font(.system(size: 12))
+            .scaledFont(size: 12)
             .foregroundStyle(color)
             .shadow(color: color.opacity(0.4), radius: 2)
     }

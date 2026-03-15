@@ -95,14 +95,14 @@ struct MergeOptionsView: View {
                     .foregroundStyle(Catalyst.foreground)
                     .lineLimit(2)
             }
-            .font(.system(size: 11, design: .monospaced))
+            .scaledFont(size: 11, design: .monospaced)
 
             HStack(spacing: 8) {
                 Button {
                     selectedMethod = nil
                 } label: {
                     Text("Cancel")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 11, weight: .medium, design: .monospaced)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                 }
@@ -114,7 +114,7 @@ struct MergeOptionsView: View {
                     onSelect(method)
                 } label: {
                     Text("Confirm Merge")
-                        .font(.system(size: 11, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 11, weight: .medium, design: .monospaced)
                         .padding(.horizontal, 10)
                         .padding(.vertical, 4)
                 }

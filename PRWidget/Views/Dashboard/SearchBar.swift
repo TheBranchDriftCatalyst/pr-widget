@@ -13,7 +13,7 @@ struct SearchBar: View {
 
             TextField("Search PRs...", text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12, design: .monospaced))
+                .scaledFont(size: 12, design: .monospaced)
                 .foregroundStyle(Catalyst.foreground)
                 .focused($isFocused)
                 .accessibilityIdentifier(AccessibilityID.searchField)

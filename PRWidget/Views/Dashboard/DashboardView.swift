@@ -125,10 +125,10 @@ struct DashboardView: View {
         VStack(spacing: 8) {
             Spacer()
             Image(systemName: "magnifyingglass")
-                .font(.system(size: 28))
+                .scaledFont(size: 28)
                 .foregroundStyle(Catalyst.subtle)
             Text("NO MATCHES")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .scaledFont(size: 12, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.muted)
             Spacer()
@@ -142,10 +142,10 @@ struct DashboardView: View {
         VStack(spacing: 16) {
             Spacer()
             Image(systemName: "person.badge.key")
-                .font(.system(size: 40))
+                .scaledFont(size: 40)
                 .foregroundStyle(Catalyst.magenta)
             Text("NO ACCOUNTS")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .scaledFont(size: 14, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.foreground)
             Text("Add a GitHub account to get started.")
@@ -167,10 +167,10 @@ struct DashboardView: View {
         VStack(spacing: 12) {
             Spacer()
             Image(systemName: "checkmark.circle")
-                .font(.system(size: 40))
+                .scaledFont(size: 40)
                 .foregroundStyle(Catalyst.cyan)
             Text("INBOX ZERO")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .scaledFont(size: 14, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.foreground)
             Text("No open pull requests need your attention.")
@@ -207,17 +207,17 @@ private struct PinnedSection: View {
         } header: {
             HStack(spacing: 6) {
                 Image(systemName: "pin.fill")
-                    .font(.system(size: 9))
+                    .scaledFont(size: 9)
                     .foregroundStyle(Catalyst.yellow)
                     .shadow(color: Catalyst.yellow.opacity(0.5), radius: 3)
 
                 Text("PINNED")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .tracking(1)
                     .foregroundStyle(Catalyst.foreground)
 
                 Text("\(prs.count)")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 10, weight: .medium, design: .monospaced)
                     .foregroundStyle(Catalyst.yellow)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
@@ -268,7 +268,7 @@ private struct RepoGroupSection: View {
     private var repoHeader: some View {
         HStack(spacing: 6) {
             Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                .font(.system(size: 9, weight: .bold))
+                .scaledFont(size: 9, weight: .bold)
                 .foregroundStyle(Catalyst.subtle)
                 .frame(width: 12)
                 .animation(.easeInOut(duration: 0.2), value: isCollapsed)
@@ -279,13 +279,13 @@ private struct RepoGroupSection: View {
                 .shadow(color: Catalyst.cyan.opacity(0.5), radius: 3)
 
             Text(repoName.uppercased())
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.foreground)
                 .lineLimit(1)
 
             Text("\(prs.count)")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .scaledFont(size: 10, weight: .medium, design: .monospaced)
                 .foregroundStyle(Catalyst.cyan)
                 .padding(.horizontal, 5)
                 .padding(.vertical, 1)
@@ -334,19 +334,19 @@ struct PRRowContent: View {
 
                     if store.isPinned(pr.id) {
                         Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
+                            .scaledFont(size: 9)
                             .foregroundStyle(Catalyst.yellow)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(pr.title)
-                            .font(.system(size: 14))
+                            .scaledFont(size: 14)
                             .fontWeight(.medium)
                             .foregroundStyle(Catalyst.foreground)
                             .lineLimit(2)
 
                         Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .fontDesign(.monospaced)
                             .foregroundStyle(Catalyst.muted)
                     }
@@ -362,7 +362,7 @@ struct PRRowContent: View {
 
                     if pr.mergeable == .conflicting {
                         Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Catalyst.warning)
                     }
 
@@ -374,7 +374,7 @@ struct PRRowContent: View {
                         Text("-\(pr.deletions)")
                             .foregroundStyle(Catalyst.red)
                     }
-                    .font(.system(size: 11))
+                    .scaledFont(size: 11)
                     .fontDesign(.monospaced)
                 }
 

@@ -28,13 +28,13 @@ struct PRRowView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pr.title)
-                                .font(.system(size: 14))
+                                .scaledFont(size: 14)
                                 .fontWeight(.medium)
                                 .foregroundStyle(Catalyst.foreground)
                                 .lineLimit(2)
 
                             Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                                .font(.system(size: 11))
+                                .scaledFont(size: 11)
                                 .fontDesign(.monospaced)
                                 .foregroundStyle(Catalyst.muted)
                         }
@@ -52,7 +52,7 @@ struct PRRowView: View {
 
                         if pr.mergeable == .conflicting {
                             Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
-                                .font(.system(size: 11))
+                                .scaledFont(size: 11)
                                 .foregroundStyle(Catalyst.warning)
                         }
 
@@ -65,7 +65,7 @@ struct PRRowView: View {
                             Text("-\(pr.deletions)")
                                 .foregroundStyle(Catalyst.red)
                         }
-                        .font(.system(size: 11))
+                        .scaledFont(size: 11)
                         .fontDesign(.monospaced)
                     }
 

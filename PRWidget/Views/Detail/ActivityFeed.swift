@@ -7,14 +7,14 @@ struct ActivityFeed: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("ACTIVITY")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.muted)
                 .padding(.bottom, 4)
 
             if activities.isEmpty {
                 Text("No activity yet")
-                    .font(.system(size: 11))
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.subtle)
             } else {
                 ForEach(activities) { item in
@@ -41,19 +41,19 @@ struct ActivityFeed: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Image(systemName: "text.bubble")
-                    .font(.system(size: 9))
+                    .scaledFont(size: 9)
                     .foregroundStyle(Catalyst.blue)
                 Text(comment.author.login)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .scaledFont(size: 11, weight: .semibold, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
                 Spacer()
                 Text(relativeTime(date))
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
             }
 
             Text(comment.body.prefix(200))
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Catalyst.muted)
                 .lineLimit(3)
         }
@@ -64,12 +64,12 @@ struct ActivityFeed: View {
         HStack(spacing: 4) {
             eventIcon(event.type)
             Text(event.description)
-                .font(.system(size: 11, design: .monospaced))
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(Catalyst.subtle)
                 .lineLimit(1)
             Spacer()
             Text(relativeTime(event.createdAt))
-                .font(.system(size: 10, design: .monospaced))
+                .scaledFont(size: 10, design: .monospaced)
                 .foregroundStyle(Catalyst.subtle)
         }
         .padding(.vertical, 2)
@@ -107,7 +107,7 @@ struct ActivityFeed: View {
                     .foregroundStyle(Catalyst.warning)
             }
         }
-        .font(.system(size: 9))
+        .scaledFont(size: 9)
         .shadow(color: iconColor(for: type).opacity(0.5), radius: 2)
     }
 

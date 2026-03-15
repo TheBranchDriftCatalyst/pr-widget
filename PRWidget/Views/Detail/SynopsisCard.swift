@@ -9,7 +9,7 @@ struct SynopsisCard: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("AI SYNOPSIS")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .tracking(1)
                     .foregroundStyle(Catalyst.cyan)
 
@@ -17,7 +17,7 @@ struct SynopsisCard: View {
 
                 if let synopsis {
                     Text(synopsis.provider.rawValue.uppercased())
-                        .font(.system(size: 8, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 8, weight: .medium, design: .monospaced)
                         .foregroundStyle(Catalyst.subtle)
                         .padding(.horizontal, 5)
                         .padding(.vertical, 2)
@@ -28,7 +28,7 @@ struct SynopsisCard: View {
 
             if let synopsis {
                 Text(synopsis.summary)
-                    .font(.system(size: 12))
+                    .scaledFont(size: 12)
                     .foregroundStyle(Catalyst.foreground)
                     .fixedSize(horizontal: false, vertical: true)
 
@@ -37,10 +37,10 @@ struct SynopsisCard: View {
                         ForEach(synopsis.actionItems, id: \.self) { item in
                             HStack(alignment: .top, spacing: 4) {
                                 Text("•")
-                                    .font(.system(size: 11))
+                                    .scaledFont(size: 11)
                                     .foregroundStyle(Catalyst.cyan)
                                 Text(item)
-                                    .font(.system(size: 11))
+                                    .scaledFont(size: 11)
                                     .foregroundStyle(Catalyst.muted)
                             }
                         }
@@ -49,7 +49,7 @@ struct SynopsisCard: View {
 
                 if let reason = synopsis.urgencyReason {
                     Text(reason)
-                        .font(.system(size: 10, design: .monospaced))
+                        .scaledFont(size: 10, design: .monospaced)
                         .foregroundStyle(Catalyst.warning)
                 }
             } else if isLoading {
@@ -58,13 +58,13 @@ struct SynopsisCard: View {
                         .controlSize(.mini)
                         .tint(Catalyst.cyan)
                     Text("Generating synopsis...")
-                        .font(.system(size: 11))
+                        .scaledFont(size: 11)
                         .foregroundStyle(Catalyst.subtle)
                 }
                 .shimmerLoading()
             } else {
                 Text("No synopsis available")
-                    .font(.system(size: 11))
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.subtle)
             }
         }

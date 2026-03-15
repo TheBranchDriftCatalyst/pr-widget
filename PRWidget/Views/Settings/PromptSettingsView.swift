@@ -12,7 +12,7 @@ struct PromptSettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("PROMPT TEMPLATE")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 11, weight: .bold, design: .monospaced)
                             .tracking(1)
                             .foregroundStyle(Catalyst.foreground)
                         Spacer()
@@ -25,11 +25,11 @@ struct PromptSettingsView: View {
                     }
 
                     Text("Use {{variable}} syntax for interpolation")
-                        .font(.system(size: 9, design: .monospaced))
+                        .scaledFont(size: 9, design: .monospaced)
                         .foregroundStyle(Catalyst.muted)
 
                     TextEditor(text: $s.synopsisPromptTemplate)
-                        .font(.system(size: 10, design: .monospaced))
+                        .scaledFont(size: 10, design: .monospaced)
                         .scrollContentBackground(.hidden)
                         .frame(minHeight: 160)
                         .padding(6)
@@ -43,12 +43,12 @@ struct PromptSettingsView: View {
                 // Response Format
                 VStack(alignment: .leading, spacing: 8) {
                     Text("RESPONSE FORMAT")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .scaledFont(size: 11, weight: .bold, design: .monospaced)
                         .tracking(1)
                         .foregroundStyle(Catalyst.foreground)
 
                     TextEditor(text: $s.synopsisResponseFormat)
-                        .font(.system(size: 10, design: .monospaced))
+                        .scaledFont(size: 10, design: .monospaced)
                         .scrollContentBackground(.hidden)
                         .frame(minHeight: 80)
                         .padding(6)
@@ -62,7 +62,7 @@ struct PromptSettingsView: View {
                 // Available Variables
                 VStack(alignment: .leading, spacing: 8) {
                     Text("AVAILABLE VARIABLES")
-                        .font(.system(size: 11, weight: .bold, design: .monospaced))
+                        .scaledFont(size: 11, weight: .bold, design: .monospaced)
                         .tracking(1)
                         .foregroundStyle(Catalyst.foreground)
 
@@ -88,11 +88,11 @@ struct PromptSettingsView: View {
                     ForEach(variables, id: \.0) { variable, description in
                         HStack(spacing: 8) {
                             Text(variable)
-                                .font(.system(size: 9, weight: .semibold, design: .monospaced))
+                                .scaledFont(size: 9, weight: .semibold, design: .monospaced)
                                 .foregroundStyle(Catalyst.cyan)
                                 .frame(width: 130, alignment: .leading)
                             Text(description)
-                                .font(.system(size: 9, design: .monospaced))
+                                .scaledFont(size: 9, design: .monospaced)
                                 .foregroundStyle(Catalyst.muted)
                             Spacer()
                         }

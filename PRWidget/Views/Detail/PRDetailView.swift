@@ -24,9 +24,9 @@ struct PRDetailView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .semibold))
+                            .scaledFont(size: 11, weight: .semibold)
                         Text("BACK")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 10, weight: .bold, design: .monospaced)
                             .tracking(1)
                     }
                     .foregroundStyle(Catalyst.cyan)
@@ -38,11 +38,11 @@ struct PRDetailView: View {
                 Spacer()
 
                 Text(pr.repository.nameWithOwner)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.muted)
 
                 Text("#\(pr.number)")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
             }
             .padding(.horizontal, 8)
@@ -90,31 +90,31 @@ struct PRDetailView: View {
             HStack(spacing: 8) {
                 stateBadge
                 Text(pr.repository.nameWithOwner)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 11, weight: .medium, design: .monospaced)
                     .foregroundStyle(Catalyst.muted)
                 Spacer()
                 Text("#\(pr.number)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 11, weight: .bold, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
             }
 
             Text(pr.title)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold)
                 .foregroundStyle(Catalyst.foreground)
 
             HStack(spacing: 4) {
                 Text(pr.headRefName)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
                     .background(Catalyst.cyan.opacity(0.1), in: .rect(cornerRadius: 3))
                     .shadow(color: Catalyst.cyan.opacity(0.2), radius: 2)
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 8))
+                    .scaledFont(size: 8)
                     .foregroundStyle(Catalyst.subtle)
                 Text(pr.baseRefName)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.magenta)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
@@ -139,7 +139,7 @@ struct PRDetailView: View {
                     Text("-\(pr.deletions)")
                         .foregroundStyle(Catalyst.red)
                 }
-                .font(.system(size: 11, design: .monospaced))
+                .scaledFont(size: 11, design: .monospaced)
 
                 if let detail {
                     Text("\(detail.changedFiles) files")
@@ -152,7 +152,7 @@ struct PRDetailView: View {
                 NSWorkspace.shared.open(pr.url)
             } label: {
                 Label("Open in GitHub", systemImage: "arrow.up.right")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 11, weight: .medium, design: .monospaced)
                     .foregroundStyle(Catalyst.background)
                     .padding(.horizontal, 10)
                     .padding(.vertical, 4)
@@ -173,7 +173,7 @@ struct PRDetailView: View {
         }
 
         return Label(text, systemImage: icon)
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .scaledFont(size: 10, weight: .bold, design: .monospaced)
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
@@ -195,7 +195,7 @@ struct PRDetailView: View {
 
             if let actionError {
                 Text(actionError)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.red)
                     .padding(.horizontal, 12)
                     .padding(.bottom, 8)
@@ -215,7 +215,7 @@ struct PRDetailView: View {
     private func checksSection(_ checks: [PRCheckRun]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("CHECKS")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.muted)
                 .padding(.bottom, 4)
@@ -224,13 +224,13 @@ struct PRDetailView: View {
                 HStack(spacing: 6) {
                     checkIcon(for: check)
                     Text(check.name)
-                        .font(.system(size: 11, design: .monospaced))
+                        .scaledFont(size: 11, design: .monospaced)
                         .foregroundStyle(Catalyst.foreground)
                         .lineLimit(1)
                     Spacer()
                     if let conclusion = check.conclusion {
                         Text(conclusion.lowercased())
-                            .font(.system(size: 10, design: .monospaced))
+                            .scaledFont(size: 10, design: .monospaced)
                             .foregroundStyle(Catalyst.subtle)
                     }
                 }
@@ -268,7 +268,7 @@ struct PRDetailView: View {
                     .foregroundStyle(Catalyst.subtle)
             }
         }
-        .font(.system(size: 12))
+        .scaledFont(size: 12)
         .shadow(color: color.opacity(0.5), radius: 3)
     }
 
@@ -288,7 +288,7 @@ struct PRDetailView: View {
                 .controlSize(.small)
                 .tint(Catalyst.cyan)
             Text("LOADING DETAILS...")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.muted)
             Spacer()

@@ -5,45 +5,74 @@ struct FilterBar: View {
     @Binding var activeFilter: PRFilter
 
     var body: some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 6) {
-                ForEach(PRFilter.allCases, id: \.self) { filter in
-                    FilterChip(
-                        title: filter.rawValue,
-                        isActive: activeFilter == filter,
-                        action: { activeFilter = filter }
-                    )
+        VStack(spacing: 0) {
+            // Primary row: triage categories
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(PRFilter.triageFilters, id: \.self) { filter in
+                        FilterChip(
+                            title: filter.rawValue,
+                            isActive: activeFilter == filter,
+                            action: { activeFilter = filter }
+                        )
+                    }
                 }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 6)
             }
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
+            .background(Catalyst.card)
+
+            // Secondary row: perspective filters
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 6) {
+                    ForEach(PRFilter.perspectiveFilters, id: \.self) { filter in
+                        FilterChip(
+                            title: filter.rawValue,
+                            isActive: activeFilter == filter,
+                            style: .secondary,
+                            action: { activeFilter = filter }
+                        )
+                    }
+                }
+                .padding(.horizontal, 12)
+                .padding(.vertical, 4)
+            }
+            .background(Catalyst.surface)
         }
         .accessibilityIdentifier(AccessibilityID.filterBar)
-        .background(Catalyst.card)
     }
 }
 
 private struct FilterChip: View {
     let title: String
     let isActive: Bool
+    var style: Style = .primary
     let action: () -> Void
+
+    enum Style {
+        case primary, secondary
+    }
 
     var body: some View {
         Button(action: action) {
             Text(title.uppercased())
-                .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                .scaledFont(size: style == .primary ? 10 : 9, weight: .semibold, design: .monospaced)
                 .tracking(0.5)
                 .foregroundStyle(isActive ? Catalyst.background : Catalyst.muted)
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(isActive ? Catalyst.cyan : Catalyst.surface, in: Capsule())
+                .background(isActive ? accentColor : Catalyst.surface, in: Capsule())
                 .overlay(
                     Capsule()
                         .strokeBorder(isActive ? Color.clear : Catalyst.border, lineWidth: 1)
                 )
-                .if(isActive) { $0.neonGlow(Catalyst.cyan, radius: 6) }
+                .if(isActive) { $0.neonGlow(accentColor, radius: 6) }
         }
         .buttonStyle(.plain)
         .accessibilityIdentifier(AccessibilityID.filterChip(name: title))
+    }
+
+    private var accentColor: Color {
+        style == .primary ? Catalyst.cyan : Catalyst.magenta
     }
 }

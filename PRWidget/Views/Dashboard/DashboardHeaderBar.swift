@@ -10,7 +10,7 @@ struct DashboardHeaderBar: View {
     let isPinned: Bool
     let blockedByMe: Int
     let ownedByMe: Int
-    let readyForQA: Int
+    let readyToShip: Int
     let onRefresh: () -> Void
     let onTogglePin: () -> Void
     let onOpenSettings: () -> Void

@@ -11,18 +11,18 @@ struct AISettingsView: View {
                 // Provider fallback chain
                 VStack(alignment: .leading, spacing: 4) {
                     Text("PROVIDER FALLBACK CHAIN")
-                        .font(.system(size: 10, weight: .bold, design: .monospaced))
+                        .scaledFont(size: 10, weight: .bold, design: .monospaced)
                         .tracking(1)
                         .foregroundStyle(Catalyst.muted)
 
                     HStack(spacing: 4) {
                         providerTag("Ollama", enabled: aiSettings.ollamaEnabled)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 8))
+                            .scaledFont(size: 8)
                             .foregroundStyle(Catalyst.subtle)
                         providerTag("OpenAI", enabled: aiSettings.openAIEnabled)
                         Image(systemName: "arrow.right")
-                            .font(.system(size: 8))
+                            .scaledFont(size: 8)
                             .foregroundStyle(Catalyst.subtle)
                         providerTag("Algorithmic", enabled: true)
                     }
@@ -32,7 +32,7 @@ struct AISettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("OLLAMA")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 11, weight: .bold, design: .monospaced)
                             .tracking(1)
                             .foregroundStyle(Catalyst.foreground)
 
@@ -52,25 +52,25 @@ struct AISettingsView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Text("Base URL")
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .foregroundStyle(Catalyst.muted)
                                     .frame(width: 60, alignment: .trailing)
                                 TextField("http://localhost:11434", text: $s.ollamaBaseURL)
                                     .textFieldStyle(.roundedBorder)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .controlSize(.small)
                             }
 
                             HStack {
                                 Text("Model")
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .foregroundStyle(Catalyst.muted)
                                     .frame(width: 60, alignment: .trailing)
 
                                 if aiSettings.availableOllamaModels.isEmpty {
                                     TextField("llama3.2", text: $s.selectedOllamaModel)
                                         .textFieldStyle(.roundedBorder)
-                                        .font(.system(size: 10, design: .monospaced))
+                                        .scaledFont(size: 10, design: .monospaced)
                                         .controlSize(.small)
                                 } else {
                                     Picker("", selection: $s.selectedOllamaModel) {
@@ -97,7 +97,7 @@ struct AISettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Text("OPENAI")
-                            .font(.system(size: 11, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 11, weight: .bold, design: .monospaced)
                             .tracking(1)
                             .foregroundStyle(Catalyst.foreground)
 
@@ -112,23 +112,23 @@ struct AISettingsView: View {
                         VStack(alignment: .leading, spacing: 6) {
                             HStack {
                                 Text("API Key")
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .foregroundStyle(Catalyst.muted)
                                     .frame(width: 60, alignment: .trailing)
                                 SecureField("sk-...", text: $s.openAIKey)
                                     .textFieldStyle(.roundedBorder)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .controlSize(.small)
                             }
 
                             HStack {
                                 Text("Model")
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .foregroundStyle(Catalyst.muted)
                                     .frame(width: 60, alignment: .trailing)
                                 TextField("gpt-4o-mini", text: $s.openAIModel)
                                     .textFieldStyle(.roundedBorder)
-                                    .font(.system(size: 10, design: .monospaced))
+                                    .scaledFont(size: 10, design: .monospaced)
                                     .controlSize(.small)
                             }
                         }
@@ -143,7 +143,7 @@ struct AISettingsView: View {
 
     private func providerTag(_ name: String, enabled: Bool) -> some View {
         Text(name.uppercased())
-            .font(.system(size: 9, weight: .semibold, design: .monospaced))
+            .scaledFont(size: 9, weight: .semibold, design: .monospaced)
             .foregroundStyle(enabled ? Catalyst.cyan : Catalyst.subtle)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
