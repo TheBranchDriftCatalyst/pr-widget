@@ -12,10 +12,7 @@ struct GeneralSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             // Hotkey section
             VStack(alignment: .leading, spacing: 8) {
-                Text("KEYBOARD SHORTCUT")
-                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
+                SectionHeader(title: "KEYBOARD SHORTCUT")
 
                 HStack(spacing: 10) {
                     Text("Toggle Panel")
@@ -48,10 +45,7 @@ struct GeneralSettingsView: View {
 
             // Text scale section
             VStack(alignment: .leading, spacing: 8) {
-                Text("TEXT SCALE")
-                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
+                SectionHeader(title: "TEXT SCALE")
 
                 UIScaleSlider(scale: Binding(
                     get: { CGFloat(textScale) },
@@ -63,10 +57,7 @@ struct GeneralSettingsView: View {
 
             // About
             VStack(alignment: .leading, spacing: 4) {
-                Text("ABOUT")
-                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
+                SectionHeader(title: "ABOUT")
 
                 Text("P-Arr — Catalyst DevSpace")
                     .scaledFont(size: 11, design: .monospaced)

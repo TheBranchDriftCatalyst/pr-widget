@@ -111,36 +111,17 @@ struct DiffPanelView: View {
     }
 
     private var emptyView: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "doc.text")
-                .scaledFont(size: 28)
-                .foregroundStyle(Catalyst.subtle)
-            Text("NO FILE CHANGES")
-                .scaledFont(size: 12, weight: .bold, design: .monospaced)
-                .tracking(2)
-                .foregroundStyle(Catalyst.muted)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyState(icon: "doc.text", title: "NO FILE CHANGES")
+            .frame(maxHeight: .infinity)
     }
 
     private var noSelectionView: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "doc.text.magnifyingglass")
-                .scaledFont(size: 28)
-                .foregroundStyle(Catalyst.subtle)
-            Text("SELECT A FILE")
-                .scaledFont(size: 12, weight: .bold, design: .monospaced)
-                .tracking(2)
-                .foregroundStyle(Catalyst.muted)
-            Text("Choose a file from the sidebar to view its diff")
-                .scaledFont(size: 11)
-                .foregroundStyle(Catalyst.subtle)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyState(
+            icon: "doc.text.magnifyingglass",
+            title: "SELECT A FILE",
+            subtitle: "Choose a file from the sidebar to view its diff"
+        )
+        .frame(maxHeight: .infinity)
     }
 
     private func loadDiffs() async {

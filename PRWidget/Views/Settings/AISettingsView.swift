@@ -10,10 +10,7 @@ struct AISettingsView: View {
             VStack(alignment: .leading, spacing: 16) {
                 // Provider fallback chain
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("PROVIDER FALLBACK CHAIN")
-                        .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                        .tracking(1)
-                        .foregroundStyle(Catalyst.muted)
+                    SectionHeader(title: "PROVIDER FALLBACK CHAIN")
 
                     HStack(spacing: 4) {
                         providerTag("Ollama", enabled: aiSettings.ollamaEnabled)

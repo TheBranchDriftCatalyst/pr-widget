@@ -4,10 +4,10 @@ import CatalystSwift
 struct DashboardView: View {
     @Environment(DashboardStore.self) var store
     @Environment(AccountManager.self) var accountManager
+    @FocusState private var isSearchFocused: Bool
 
     var onOpenSettings: () -> Void = {}
     var onTogglePin: () -> Void = {}
-    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
 
     var body: some View {
         @Bindable var store = store
@@ -19,7 +19,7 @@ struct DashboardView: View {
                     isPinned: store.isPinned,
                     blockedByMe: store.state.blockedByMeCount,
                     ownedByMe: store.state.ownedByMeCount,
-                    readyForQA: store.state.readyForQACount,
+                    readyToShip: store.state.readyToShipCount,
                     onRefresh: { Task { await store.refresh() } },
                     onTogglePin: onTogglePin,
                     onOpenSettings: onOpenSettings
@@ -35,7 +35,7 @@ struct DashboardView: View {
                 } else {
                     FilterBar(activeFilter: $store.activeFilter)
                     GlowDivider()
-                    SearchBar(text: $store.searchQuery)
+                    SearchBar(text: $store.searchQuery, isFocused: $isSearchFocused)
                     GlowDivider()
                     LabelFilterView(
                         availableLabels: store.availableLabels,
@@ -61,6 +61,27 @@ struct DashboardView: View {
                     .environment(accountManager)
             }
         }
+        .background {
+            // Keyboard shortcuts via hidden buttons
+            Group {
+                Button("") { Task { await store.refresh() } }
+                    .keyboardShortcut("r", modifiers: .command)
+
+                Button("") { isSearchFocused = true }
+                    .keyboardShortcut("f", modifiers: .command)
+
+                Button("") { onOpenSettings() }
+                    .keyboardShortcut(",", modifiers: .command)
+
+                // Cmd+1-4 for triage filter tabs
+                ForEach(Array(PRFilter.triageFilters.enumerated()), id: \.offset) { index, filter in
+                    Button("") { store.activeFilter = filter }
+                        .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                }
+            }
+            .frame(width: 0, height: 0)
+            .opacity(0)
+        }
     }
 
     private var prListContent: some View {
@@ -74,7 +95,7 @@ struct DashboardView: View {
                 // Pinned section
                 let pinned = store.pinnedPRs
                 if !pinned.isEmpty {
-                    PinnedSection(prs: pinned, store: store, onOpenDiffPanel: onOpenDiffPanel)
+                    PinnedSection(prs: pinned, store: store)
                 }
 
                 // Repo groups
@@ -88,7 +109,6 @@ struct DashboardView: View {
                             prs: group.prs,
                             isCollapsed: store.collapsedRepos.contains(group.repoName),
                             store: store,
-                            onOpenDiffPanel: onOpenDiffPanel,
                             onToggle: {
                                 if store.collapsedRepos.contains(group.repoName) {
                                     store.collapsedRepos.remove(group.repoName)
@@ -122,20 +142,9 @@ struct DashboardView: View {
     }
 
     private var noMatchView: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "magnifyingglass")
-                .scaledFont(size: 28)
-                .foregroundStyle(Catalyst.subtle)
-            Text("NO MATCHES")
-                .scaledFont(size: 12, weight: .bold, design: .monospaced)
-                .tracking(2)
-                .foregroundStyle(Catalyst.muted)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .accessibilityIdentifier(AccessibilityID.noMatchView)
+        EmptyState(icon: "magnifyingglass", title: "NO MATCHES")
+            .padding()
+            .accessibilityIdentifier(AccessibilityID.noMatchView)
     }
 
     private var noAccountView: some View {
@@ -164,21 +173,12 @@ struct DashboardView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            Image(systemName: "checkmark.circle")
-                .scaledFont(size: 40)
-                .foregroundStyle(Catalyst.cyan)
-            Text("INBOX ZERO")
-                .scaledFont(size: 14, weight: .bold, design: .monospaced)
-                .tracking(2)
-                .foregroundStyle(Catalyst.foreground)
-            Text("No open pull requests need your attention.")
-                .font(.caption)
-                .foregroundStyle(Catalyst.muted)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
+        EmptyState(
+            icon: "checkmark.circle",
+            title: "INBOX ZERO",
+            subtitle: "No open pull requests need your attention.",
+            iconColor: Catalyst.cyan
+        )
         .padding()
     }
 }
@@ -188,7 +188,6 @@ struct DashboardView: View {
 private struct PinnedSection: View {
     let prs: [PullRequest]
     let store: DashboardStore
-    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
 
     var body: some View {
         Section {
@@ -197,9 +196,6 @@ private struct PinnedSection: View {
                     PRRowContent(pr: pr, store: store)
                 }
                 .buttonStyle(.plain)
-                .simultaneousGesture(TapGesture().onEnded {
-                    onOpenDiffPanel(pr)
-                })
                 if pr.id != prs.last?.id {
                     GlowDivider()
                 }
@@ -239,7 +235,6 @@ private struct RepoGroupSection: View {
     let prs: [PullRequest]
     let isCollapsed: Bool
     let store: DashboardStore
-    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
     let onToggle: () -> Void
     let onCmdToggle: () -> Void
     var onDrop: (String) -> Void = { _ in }
@@ -252,9 +247,6 @@ private struct RepoGroupSection: View {
                         PRRowContent(pr: pr, store: store)
                     }
                     .buttonStyle(.plain)
-                    .simultaneousGesture(TapGesture().onEnded {
-                        onOpenDiffPanel(pr)
-                    })
                     if pr.id != prs.last?.id {
                         GlowDivider()
                     }

@@ -8,10 +8,7 @@ struct SynopsisCard: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
-                Text("AI SYNOPSIS")
-                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.cyan)
+                SectionHeader(title: "AI SYNOPSIS", accentColor: Catalyst.cyan)
 
                 Spacer()
 

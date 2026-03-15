@@ -6,10 +6,7 @@ struct ActivityFeed: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("ACTIVITY")
-                .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                .tracking(1)
-                .foregroundStyle(Catalyst.muted)
+            SectionHeader(title: "ACTIVITY")
                 .padding(.bottom, 4)
 
             if activities.isEmpty {
@@ -47,7 +44,7 @@ struct ActivityFeed: View {
                     .scaledFont(size: 11, weight: .semibold, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
                 Spacer()
-                Text(relativeTime(date))
+                Text(date.relativeTimeString)
                     .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
             }
@@ -68,7 +65,7 @@ struct ActivityFeed: View {
                 .foregroundStyle(Catalyst.subtle)
                 .lineLimit(1)
             Spacer()
-            Text(relativeTime(event.createdAt))
+            Text(event.createdAt.relativeTimeString)
                 .scaledFont(size: 10, design: .monospaced)
                 .foregroundStyle(Catalyst.subtle)
         }
@@ -123,16 +120,5 @@ struct ActivityFeed: View {
         case .mentioned: Catalyst.pink
         case .headRefForcePushed: Catalyst.warning
         }
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let interval = Date.now.timeIntervalSince(date)
-        let minutes = Int(interval / 60)
-        if minutes < 1 { return "now" }
-        if minutes < 60 { return "\(minutes)m" }
-        let hours = minutes / 60
-        if hours < 24 { return "\(hours)h" }
-        let days = hours / 24
-        return "\(days)d"
     }
 }

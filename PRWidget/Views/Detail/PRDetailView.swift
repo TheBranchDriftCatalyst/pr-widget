@@ -1,6 +1,10 @@
 import SwiftUI
 import CatalystSwift
 
+extension Notification.Name {
+    static let openDiffPanel = Notification.Name("PRWidget.openDiffPanel")
+}
+
 struct PRDetailView: View {
     let pr: PullRequest
 
@@ -34,6 +38,7 @@ struct PRDetailView: View {
                     .padding(.vertical, 5)
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.escape, modifiers: [])
 
                 Spacer()
 
@@ -214,10 +219,7 @@ struct PRDetailView: View {
 
     private func checksSection(_ checks: [PRCheckRun]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("CHECKS")
-                .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                .tracking(1)
-                .foregroundStyle(Catalyst.muted)
+            SectionHeader(title: "CHECKS")
                 .padding(.bottom, 4)
 
             ForEach(checks) { check in

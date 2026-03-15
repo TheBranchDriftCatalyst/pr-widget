@@ -73,7 +73,7 @@ struct InlineCommentThread: View {
                     Spacer()
 
                     if !isExpanded, let lastComment = thread.comments.last {
-                        Text(relativeTime(lastComment.createdAt))
+                        Text(lastComment.createdAt.relativeTimeString)
                             .scaledFont(size: 10, design: .monospaced)
                             .foregroundStyle(Catalyst.subtle)
                     }
@@ -116,7 +116,7 @@ struct InlineCommentThread: View {
 
                 Spacer()
 
-                Text(relativeTime(comment.createdAt))
+                Text(comment.createdAt.relativeTimeString)
                     .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
             }
@@ -128,16 +128,5 @@ struct InlineCommentThread: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let interval = Date.now.timeIntervalSince(date)
-        let minutes = Int(interval / 60)
-        if minutes < 1 { return "now" }
-        if minutes < 60 { return "\(minutes)m" }
-        let hours = minutes / 60
-        if hours < 24 { return "\(hours)h" }
-        let days = hours / 24
-        return "\(days)d"
     }
 }
