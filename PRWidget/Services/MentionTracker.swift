@@ -21,22 +21,33 @@ final class MentionTracker {
 
     func checkForMentions(prs: [PullRequest], currentUser: String) {
         guard !currentUser.isEmpty else { return }
-        let mentionTag = "@\(currentUser)"
         var newMentionedPRIDs: Set<String> = []
         var unseenCount = 0
 
         for pr in prs {
-            guard let detail = pr.detail else { continue }
-            let hasMention = detail.comments.contains { comment in
-                comment.body.contains(mentionTag)
-            }
-            if hasMention {
-                newMentionedPRIDs.insert(pr.id)
-                // Check if any comment mentioning us is unseen
-                let unseenMentions = detail.comments.filter { comment in
-                    comment.body.contains(mentionTag) && !seenMentionIDs.contains(comment.id)
+            // If detail is loaded, check comments for @mentions
+            if let detail = pr.detail {
+                let mentionTag = "@\(currentUser)"
+                let mentionComments = detail.comments.filter { $0.body.contains(mentionTag) }
+                if !mentionComments.isEmpty {
+                    newMentionedPRIDs.insert(pr.id)
+                    unseenCount += mentionComments.filter { !seenMentionIDs.contains($0.id) }.count
+                    continue
                 }
-                unseenCount += unseenMentions.count
+            }
+
+            // Without detail, use dashboard-level data as a proxy:
+            // PRs where review is requested from us or we are assigned
+            let isReviewRequested = pr.reviewRequests.contains { $0.login == currentUser }
+            let isAssigned = pr.assignees.contains { $0.login == currentUser }
+            let isNotAuthor = pr.author.login != currentUser
+
+            if isNotAuthor && (isReviewRequested || isAssigned) {
+                // Use pr.id as a synthetic mention ID for tracking
+                if !seenMentionIDs.contains(pr.id) {
+                    newMentionedPRIDs.insert(pr.id)
+                    unseenCount += 1
+                }
             }
         }
 
@@ -45,22 +56,33 @@ final class MentionTracker {
     }
 
     func markAsRead(prId: String, comments: [PRComment]) {
-        let currentUser = "" // Will be passed from outside
+        // Count unseen before marking them seen
+        let newlyMarked = comments.filter { !seenMentionIDs.contains($0.id) }.count
+        let wasSyntheticUnseen = !seenMentionIDs.contains(prId)
+
         for comment in comments {
             seenMentionIDs.insert(comment.id)
         }
+        seenMentionIDs.insert(prId)
         mentionedPRIDs.remove(prId)
-        // Recalculate count
-        unreadMentionCount = max(0, unreadMentionCount - comments.count)
+
+        let reduction = newlyMarked + (wasSyntheticUnseen ? 1 : 0)
+        unreadMentionCount = max(0, unreadMentionCount - reduction)
     }
 
     func markAllMentionsRead(for prId: String, detail: PRDetail) {
+        // Count unseen comments before marking
+        let unseenCommentCount = detail.comments.filter { !seenMentionIDs.contains($0.id) }.count
+        let wasSyntheticUnseen = !seenMentionIDs.contains(prId)
+
         for comment in detail.comments {
             seenMentionIDs.insert(comment.id)
         }
+        seenMentionIDs.insert(prId)
         mentionedPRIDs.remove(prId)
-        // Simple recalc
-        unreadMentionCount = max(0, unreadMentionCount)
+
+        let reduction = unseenCommentCount + (wasSyntheticUnseen ? 1 : 0)
+        unreadMentionCount = max(0, unreadMentionCount - reduction)
     }
 
     func hasMention(prId: String) -> Bool {

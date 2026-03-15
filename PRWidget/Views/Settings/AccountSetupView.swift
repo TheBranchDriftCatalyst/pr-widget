@@ -16,7 +16,7 @@ struct AccountSetupView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             Text("ADD ACCOUNT")
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .scaledFont(size: 13, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.cyan)
 

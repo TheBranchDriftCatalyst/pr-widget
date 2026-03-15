@@ -4,6 +4,7 @@ import CatalystSwift
 struct ErrorBannerView: View {
     let message: String
     @State private var pulseGlow = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         HStack(spacing: 8) {
@@ -11,13 +12,16 @@ struct ErrorBannerView: View {
                 .foregroundStyle(Catalyst.red)
                 .shadow(color: Catalyst.red.opacity(pulseGlow ? 0.6 : 0.2), radius: pulseGlow ? 6 : 2)
                 .onAppear {
+                    guard !reduceMotion else {
+                        pulseGlow = true
+                        return
+                    }
                     withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
                         pulseGlow = true
                     }
                 }
             Text(message)
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(Catalyst.foreground)
                 .lineLimit(2)
             Spacer()

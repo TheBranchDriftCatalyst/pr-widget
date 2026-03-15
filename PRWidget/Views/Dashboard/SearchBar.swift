@@ -3,19 +3,19 @@ import CatalystSwift
 
 struct SearchBar: View {
     @Binding var text: String
-    @FocusState private var isFocused: Bool
+    var isFocused: FocusState<Bool>.Binding
 
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
                 .font(.caption)
-                .foregroundStyle(isFocused ? Catalyst.cyan : Catalyst.subtle)
+                .foregroundStyle(isFocused.wrappedValue ? Catalyst.cyan : Catalyst.subtle)
 
             TextField("Search PRs...", text: $text)
                 .textFieldStyle(.plain)
-                .font(.system(size: 12, design: .monospaced))
+                .scaledFont(size: 12, design: .monospaced)
                 .foregroundStyle(Catalyst.foreground)
-                .focused($isFocused)
+                .focused(isFocused)
                 .accessibilityIdentifier(AccessibilityID.searchField)
 
             if !text.isEmpty {
@@ -33,12 +33,12 @@ struct SearchBar: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Catalyst.surface)
-        .clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+        .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
         .overlay(
-            RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
-                .strokeBorder(isFocused ? Catalyst.cyan.opacity(0.5) : Color.clear, lineWidth: 1)
+            RoundedRectangle(cornerRadius: Catalyst.radiusMD)
+                .strokeBorder(isFocused.wrappedValue ? Catalyst.cyan.opacity(0.5) : Color.clear, lineWidth: 1)
         )
-        .if(isFocused) { $0.neonGlow(Catalyst.cyan, radius: 4) }
+        .if(isFocused.wrappedValue) { $0.neonGlow(Catalyst.cyan, radius: 4) }
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
         .background(Catalyst.card)

@@ -3,6 +3,7 @@ import CatalystSwift
 
 struct StatusBadge: View {
     let status: CIStatus
+    @Environment(\.accessibilityDifferentiateWithoutColor) private var differentiateWithoutColor
 
     var body: some View {
         HStack(spacing: 3) {
@@ -13,9 +14,10 @@ struct StatusBadge: View {
             Text(statusText)
                 .font(.caption)
                 .fontDesign(.monospaced)
-                .foregroundStyle(Catalyst.muted)
+                .foregroundStyle(differentiateWithoutColor ? Catalyst.foreground : Catalyst.muted)
         }
         .accessibilityIdentifier(AccessibilityID.statusBadge)
+        .accessibilityLabel("CI status: \(statusText)")
     }
 
     private var statusIcon: String {

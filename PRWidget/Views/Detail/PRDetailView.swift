@@ -1,15 +1,23 @@
 import SwiftUI
 import CatalystSwift
 
+extension Notification.Name {
+    static let openDiffPanel = Notification.Name("PRWidget.openDiffPanel")
+}
+
 struct PRDetailView: View {
     let pr: PullRequest
 
     @Environment(DashboardStore.self) var store
+    @Environment(AccountManager.self) var accountManager
     @Environment(SynopsisEngine.self) var synopsisEngine
     @Environment(\.dismiss) private var dismiss
     @State private var detail: PRDetail?
     @State private var synopsis: AISynopsis?
     @State private var isLoadingDetail = true
+    @State private var actionError: String?
+
+    private let actionHandler = ActionHandler()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -20,9 +28,9 @@ struct PRDetailView: View {
                 } label: {
                     HStack(spacing: 4) {
                         Image(systemName: "chevron.left")
-                            .font(.system(size: 11, weight: .semibold))
+                            .scaledFont(size: 11, weight: .semibold)
                         Text("BACK")
-                            .font(.system(size: 10, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 10, weight: .bold, design: .monospaced)
                             .tracking(1)
                     }
                     .foregroundStyle(Catalyst.cyan)
@@ -30,15 +38,16 @@ struct PRDetailView: View {
                     .padding(.vertical, 5)
                 }
                 .buttonStyle(.plain)
+                .keyboardShortcut(.escape, modifiers: [])
 
                 Spacer()
 
                 Text(pr.repository.nameWithOwner)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.muted)
 
                 Text("#\(pr.number)")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
             }
             .padding(.horizontal, 8)
@@ -50,6 +59,11 @@ struct PRDetailView: View {
                 LazyVStack(alignment: .leading, spacing: 0) {
                     detailHeader
                     GlowDivider()
+
+                    if pr.state == .open && !pr.isDraft {
+                        quickActionsSection
+                        GlowDivider()
+                    }
 
                 if isLoadingDetail {
                     loadingView
@@ -81,31 +95,31 @@ struct PRDetailView: View {
             HStack(spacing: 8) {
                 stateBadge
                 Text(pr.repository.nameWithOwner)
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 11, weight: .medium, design: .monospaced)
                     .foregroundStyle(Catalyst.muted)
                 Spacer()
                 Text("#\(pr.number)")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 11, weight: .bold, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
             }
 
             Text(pr.title)
-                .font(.system(size: 15, weight: .semibold))
+                .scaledFont(size: 15, weight: .semibold)
                 .foregroundStyle(Catalyst.foreground)
 
             HStack(spacing: 4) {
                 Text(pr.headRefName)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
                     .background(Catalyst.cyan.opacity(0.1), in: .rect(cornerRadius: 3))
                     .shadow(color: Catalyst.cyan.opacity(0.2), radius: 2)
                 Image(systemName: "arrow.right")
-                    .font(.system(size: 8))
+                    .scaledFont(size: 8)
                     .foregroundStyle(Catalyst.subtle)
                 Text(pr.baseRefName)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.magenta)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
@@ -130,7 +144,7 @@ struct PRDetailView: View {
                     Text("-\(pr.deletions)")
                         .foregroundStyle(Catalyst.red)
                 }
-                .font(.system(size: 11, design: .monospaced))
+                .scaledFont(size: 11, design: .monospaced)
 
                 if let detail {
                     Text("\(detail.changedFiles) files")
@@ -139,18 +153,41 @@ struct PRDetailView: View {
                 }
             }
 
-            Button {
-                NSWorkspace.shared.open(pr.url)
-            } label: {
-                Label("Open in GitHub", systemImage: "arrow.up.right")
-                    .font(.system(size: 11, weight: .medium, design: .monospaced))
-                    .foregroundStyle(Catalyst.background)
-                    .padding(.horizontal, 10)
-                    .padding(.vertical, 4)
-                    .background(Catalyst.cyan, in: .rect(cornerRadius: Catalyst.cornerRadius))
+            HStack(spacing: 8) {
+                Button {
+                    NSWorkspace.shared.open(pr.url)
+                } label: {
+                    Label("Open in GitHub", systemImage: "arrow.up.right")
+                        .scaledFont(size: 11, weight: .medium, design: .monospaced)
+                        .foregroundStyle(Catalyst.background)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Catalyst.cyan, in: .rect(cornerRadius: Catalyst.radiusMD))
+                }
+                .buttonStyle(.plain)
+                .hoverGlow(Catalyst.cyan)
+
+                Button {
+                    NotificationCenter.default.post(
+                        name: .openDiffPanel,
+                        object: nil,
+                        userInfo: ["pr": pr]
+                    )
+                } label: {
+                    Label("View Diff", systemImage: "doc.text.magnifyingglass")
+                        .scaledFont(size: 11, weight: .medium, design: .monospaced)
+                        .foregroundStyle(Catalyst.magenta)
+                        .padding(.horizontal, 10)
+                        .padding(.vertical, 4)
+                        .background(Catalyst.magenta.opacity(0.15), in: .rect(cornerRadius: Catalyst.radiusMD))
+                        .overlay(
+                            RoundedRectangle(cornerRadius: Catalyst.radiusMD)
+                                .strokeBorder(Catalyst.magenta.opacity(0.3), lineWidth: 1)
+                        )
+                }
+                .buttonStyle(.plain)
+                .hoverGlow(Catalyst.magenta)
             }
-            .buttonStyle(.plain)
-            .hoverGlow(Catalyst.cyan)
         }
         .padding(12)
         .glassCard()
@@ -164,12 +201,34 @@ struct PRDetailView: View {
         }
 
         return Label(text, systemImage: icon)
-            .font(.system(size: 10, weight: .bold, design: .monospaced))
+            .scaledFont(size: 10, weight: .bold, design: .monospaced)
             .foregroundStyle(color)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)
             .background(color.opacity(0.15), in: Capsule())
             .shadow(color: color.opacity(0.4), radius: 3)
+    }
+
+    // MARK: - Quick Actions
+
+    private var quickActionsSection: some View {
+        VStack(spacing: 4) {
+            QuickActionsView(
+                pr: pr,
+                onApprove: { Task { await performApprove() } },
+                onMerge: { method in Task { await performMerge(method: method) } },
+                onRequestChanges: { comment in Task { await performRequestChanges(comment: comment) } }
+            )
+            .padding(12)
+
+            if let actionError {
+                Text(actionError)
+                    .scaledFont(size: 10, design: .monospaced)
+                    .foregroundStyle(Catalyst.red)
+                    .padding(.horizontal, 12)
+                    .padding(.bottom, 8)
+            }
+        }
     }
 
     // MARK: - Synopsis
@@ -183,23 +242,20 @@ struct PRDetailView: View {
 
     private func checksSection(_ checks: [PRCheckRun]) -> some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("CHECKS")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundStyle(Catalyst.muted)
+            SectionHeader(title: "CHECKS")
                 .padding(.bottom, 4)
 
             ForEach(checks) { check in
                 HStack(spacing: 6) {
                     checkIcon(for: check)
                     Text(check.name)
-                        .font(.system(size: 11, design: .monospaced))
+                        .scaledFont(size: 11, design: .monospaced)
                         .foregroundStyle(Catalyst.foreground)
                         .lineLimit(1)
                     Spacer()
                     if let conclusion = check.conclusion {
                         Text(conclusion.lowercased())
-                            .font(.system(size: 10, design: .monospaced))
+                            .scaledFont(size: 10, design: .monospaced)
                             .foregroundStyle(Catalyst.subtle)
                     }
                 }
@@ -237,7 +293,7 @@ struct PRDetailView: View {
                     .foregroundStyle(Catalyst.subtle)
             }
         }
-        .font(.system(size: 12))
+        .scaledFont(size: 12)
         .shadow(color: color.opacity(0.5), radius: 3)
     }
 
@@ -257,7 +313,7 @@ struct PRDetailView: View {
                 .controlSize(.small)
                 .tint(Catalyst.cyan)
             Text("LOADING DETAILS...")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.muted)
             Spacer()
@@ -278,6 +334,47 @@ struct PRDetailView: View {
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
+    }
+
+    // MARK: - Actions
+
+    private func performApprove() async {
+        guard let (token, endpoint) = accountCredentials else { return }
+        actionError = nil
+        do {
+            try await actionHandler.approve(pr: pr, comment: nil, token: token, endpoint: endpoint)
+            await store.refresh()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    private func performMerge(method: MergeMethod) async {
+        guard let (token, endpoint) = accountCredentials else { return }
+        actionError = nil
+        do {
+            try await actionHandler.merge(pr: pr, method: method, token: token, endpoint: endpoint)
+            await store.refresh()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    private func performRequestChanges(comment: String) async {
+        guard let (token, endpoint) = accountCredentials else { return }
+        actionError = nil
+        do {
+            try await actionHandler.requestChanges(pr: pr, comment: comment, token: token, endpoint: endpoint)
+            await store.refresh()
+        } catch {
+            actionError = error.localizedDescription
+        }
+    }
+
+    private var accountCredentials: (token: String, endpoint: URL)? {
+        guard let account = accountManager.accounts.first,
+              let token = accountManager.token(for: account) else { return nil }
+        return (token, account.graphQLEndpoint)
     }
 
     // MARK: - Data Loading

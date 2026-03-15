@@ -3,15 +3,17 @@ import SwiftUI
 // MARK: - Glass Card
 
 public struct GlassCardModifier: ViewModifier {
+    @Environment(\.accessibilityReduceTransparency) private var reduceTransparency
+
     public init() {}
 
     public func body(content: Content) -> some View {
         content
-            .background(Catalyst.cardGradient)
-            .overlay(Catalyst.glass.allowsHitTesting(false))
-            .clipShape(.rect(cornerRadius: Catalyst.cornerRadius))
+            .background(reduceTransparency ? AnyShapeStyle(Catalyst.card) : AnyShapeStyle(Catalyst.cardGradient))
+            .if(!reduceTransparency) { $0.overlay(Catalyst.glass.allowsHitTesting(false)) }
+            .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
             .overlay(
-                RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                     .strokeBorder(Catalyst.border.opacity(0.5), lineWidth: 1)
                     .allowsHitTesting(false)
             )
@@ -23,6 +25,7 @@ public struct GlassCardModifier: ViewModifier {
 public struct NeonGlowModifier: ViewModifier {
     public let color: Color
     public var radius: CGFloat = 8
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init(color: Color, radius: CGFloat = 8) {
         self.color = color
@@ -30,9 +33,13 @@ public struct NeonGlowModifier: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
-        content
-            .shadow(color: color.opacity(0.4), radius: radius / 2)
-            .shadow(color: color.opacity(0.4), radius: radius)
+        if reduceMotion {
+            content
+        } else {
+            content
+                .shadow(color: color.opacity(0.4), radius: radius / 2)
+                .shadow(color: color.opacity(0.4), radius: radius)
+        }
     }
 }
 
@@ -66,27 +73,32 @@ public struct GlowDivider: View {
 
 public struct ShimmerLoadingModifier: ViewModifier {
     @State private var phase: CGFloat = -1
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     public init() {}
 
     public func body(content: Content) -> some View {
-        content.overlay(
-            GeometryReader { geo in
-                LinearGradient(
-                    colors: [.clear, Color.white.opacity(0.05), .clear],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-                .frame(width: geo.size.width * 0.6)
-                .offset(x: phase * geo.size.width)
-                .onAppear {
-                    withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
-                        phase = 1.5
+        if reduceMotion {
+            content.overlay(Color.white.opacity(0.03))
+        } else {
+            content.overlay(
+                GeometryReader { geo in
+                    LinearGradient(
+                        colors: [.clear, Color.white.opacity(0.05), .clear],
+                        startPoint: .leading,
+                        endPoint: .trailing
+                    )
+                    .frame(width: geo.size.width * 0.6)
+                    .offset(x: phase * geo.size.width)
+                    .onAppear {
+                        withAnimation(.linear(duration: 1.5).repeatForever(autoreverses: false)) {
+                            phase = 1.5
+                        }
                     }
                 }
-            }
-            .clipped()
-        )
+                .clipped()
+            )
+        }
     }
 }
 

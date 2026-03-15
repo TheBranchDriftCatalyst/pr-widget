@@ -28,7 +28,7 @@ struct DiffPanelView: View {
 
                     if let selectedPath, let file = files.first(where: { $0.path == selectedPath }) {
                         DiffContentView(file: file) { threadId, body in
-                            await replyToThread(threadId: threadId, body: body)
+                            try await replyToThread(threadId: threadId, body: body)
                         }
                     } else {
                         noSelectionView
@@ -44,11 +44,11 @@ struct DiffPanelView: View {
     private var headerBar: some View {
         HStack(spacing: 8) {
             Text("PR #\(pr.number)")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
+                .scaledFont(size: 12, weight: .bold, design: .monospaced)
                 .foregroundStyle(Catalyst.cyan)
 
             Text(pr.title)
-                .font(.system(size: 12, weight: .medium))
+                .scaledFont(size: 12, weight: .medium)
                 .foregroundStyle(Catalyst.foreground)
                 .lineLimit(1)
                 .truncationMode(.tail)
@@ -56,14 +56,14 @@ struct DiffPanelView: View {
             Spacer()
 
             Text(pr.repository.nameWithOwner)
-                .font(.system(size: 11, design: .monospaced))
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(Catalyst.muted)
 
             Button {
                 NSWorkspace.shared.open(pr.url)
             } label: {
                 Image(systemName: "arrow.up.right")
-                    .font(.system(size: 11))
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.cyan)
             }
             .buttonStyle(.plain)
@@ -80,7 +80,7 @@ struct DiffPanelView: View {
                 .controlSize(.small)
                 .tint(Catalyst.cyan)
             Text("LOADING DIFFS...")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.muted)
             Spacer()
@@ -95,7 +95,7 @@ struct DiffPanelView: View {
                 .font(.title3)
                 .foregroundStyle(Catalyst.warning)
             Text(message)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Catalyst.muted)
                 .multilineTextAlignment(.center)
             Button("Retry") {
@@ -111,36 +111,17 @@ struct DiffPanelView: View {
     }
 
     private var emptyView: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "doc.text")
-                .font(.system(size: 28))
-                .foregroundStyle(Catalyst.subtle)
-            Text("NO FILE CHANGES")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .tracking(2)
-                .foregroundStyle(Catalyst.muted)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyState(icon: "doc.text", title: "NO FILE CHANGES")
+            .frame(maxHeight: .infinity)
     }
 
     private var noSelectionView: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "doc.text.magnifyingglass")
-                .font(.system(size: 28))
-                .foregroundStyle(Catalyst.subtle)
-            Text("SELECT A FILE")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .tracking(2)
-                .foregroundStyle(Catalyst.muted)
-            Text("Choose a file from the sidebar to view its diff")
-                .font(.system(size: 11))
-                .foregroundStyle(Catalyst.subtle)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        EmptyState(
+            icon: "doc.text.magnifyingglass",
+            title: "SELECT A FILE",
+            subtitle: "Choose a file from the sidebar to view its diff"
+        )
+        .frame(maxHeight: .infinity)
     }
 
     private func loadDiffs() async {
@@ -164,28 +145,24 @@ struct DiffPanelView: View {
         isLoading = false
     }
 
-    private func replyToThread(threadId: String, body: String) async {
+    private func replyToThread(threadId: String, body: String) async throws {
         guard let account = accountManager.accounts.first,
               let token = accountManager.token(for: account) else { return }
 
-        do {
-            let newComment = try await store.replyToReviewThread(
-                threadId: threadId,
-                body: body,
-                token: token,
-                endpoint: account.graphQLEndpoint
-            )
+        let newComment = try await store.replyToReviewThread(
+            threadId: threadId,
+            body: body,
+            token: token,
+            endpoint: account.graphQLEndpoint
+        )
 
-            // Update local state
-            for i in files.indices {
-                for j in files[i].reviewThreads.indices {
-                    if files[i].reviewThreads[j].id == threadId {
-                        files[i].reviewThreads[j].comments.append(newComment)
-                    }
+        // Update local state
+        for i in files.indices {
+            for j in files[i].reviewThreads.indices {
+                if files[i].reviewThreads[j].id == threadId {
+                    files[i].reviewThreads[j].comments.append(newComment)
                 }
             }
-        } catch {
-            // Error handled silently for now
         }
     }
 }

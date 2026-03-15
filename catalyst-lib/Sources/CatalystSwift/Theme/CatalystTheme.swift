@@ -31,8 +31,47 @@ public enum Catalyst {
     // MARK: - Glass Surface
     public static let glass = Color.white.opacity(0.03)
 
-    // MARK: - Radius
+    // MARK: - Type Scale (unscaled — prefer .catalystFont(.token) for scale-aware usage)
+    public static func display() -> Font { .system(size: 15, weight: .semibold) }
+    public static func heading() -> Font { .system(size: 14, weight: .medium) }
+    public static func subheading() -> Font { .system(size: 13, weight: .bold, design: .monospaced) }
+    public static func body() -> Font { .system(size: 12, weight: .regular, design: .monospaced) }
+    public static func caption() -> Font { .system(size: 11, weight: .medium, design: .monospaced) }
+    public static func label() -> Font { .system(size: 10, weight: .bold, design: .monospaced) }
+    public static func micro() -> Font { .system(size: 9, weight: .bold, design: .monospaced) }
+    public static func nano() -> Font { .system(size: 8, weight: .bold, design: .monospaced) }
+
+    // MARK: - Spacing Scale (4pt base unit)
+    public static let spaceXS: CGFloat = 2
+    public static let spaceSM: CGFloat = 4
+    public static let spaceMD: CGFloat = 8
+    public static let spaceLG: CGFloat = 12
+    public static let spaceXL: CGFloat = 16
+    public static let space2XL: CGFloat = 24
+
+    // MARK: - Corner Radius
+    public static let radiusSM: CGFloat = 3
+    public static let radiusMD: CGFloat = 8
+    @available(*, deprecated, renamed: "radiusMD")
     public static let cornerRadius: CGFloat = 8
+    public static let radiusFull: CGFloat = 999
+
+    // MARK: - Border Width
+    public static let borderThin: CGFloat = 0.5
+    public static let borderRegular: CGFloat = 1
+    public static let borderThick: CGFloat = 2
+
+    // MARK: - Animation Durations
+    public static let animInstant: Double = 0.1
+    public static let animFast: Double = 0.15
+    public static let animNormal: Double = 0.25
+    public static let animSlow: Double = 0.5
+    public static let animPulse: Double = 3.0
+
+    // MARK: - Tracking (Letter Spacing)
+    public static let trackingHeader: CGFloat = 2
+    public static let trackingLabel: CGFloat = 1
+    public static let trackingChip: CGFloat = 0.5
 
     // MARK: - Glow Shadows (NSShadow-compatible values)
     public static let glowCyan = Color(red: 0.0, green: 0.988, blue: 0.839).opacity(0.4)

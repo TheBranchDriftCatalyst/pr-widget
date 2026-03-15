@@ -12,14 +12,11 @@ struct GeneralSettingsView: View {
         VStack(alignment: .leading, spacing: 16) {
             // Hotkey section
             VStack(alignment: .leading, spacing: 8) {
-                Text("KEYBOARD SHORTCUT")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
+                SectionHeader(title: "KEYBOARD SHORTCUT")
 
                 HStack(spacing: 10) {
                     Text("Toggle Panel")
-                        .font(.system(size: 12, design: .monospaced))
+                        .scaledFont(size: 12, design: .monospaced)
                         .foregroundStyle(Catalyst.foreground)
 
                     Spacer()
@@ -48,10 +45,7 @@ struct GeneralSettingsView: View {
 
             // Text scale section
             VStack(alignment: .leading, spacing: 8) {
-                Text("TEXT SCALE")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
+                SectionHeader(title: "TEXT SCALE")
 
                 UIScaleSlider(scale: Binding(
                     get: { CGFloat(textScale) },
@@ -63,19 +57,16 @@ struct GeneralSettingsView: View {
 
             // About
             VStack(alignment: .leading, spacing: 4) {
-                Text("ABOUT")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
+                SectionHeader(title: "ABOUT")
 
                 Text("P-Arr — Catalyst DevSpace")
-                    .font(.system(size: 11, design: .monospaced))
+                    .scaledFont(size: 11, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
                 Text("macOS floating dashboard for GitHub PR management")
-                    .font(.system(size: 10))
+                    .scaledFont(size: 10)
                     .foregroundStyle(Catalyst.subtle)
                 Text(Bundle.main.fullVersion)
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.muted)
             }
             .padding(10)
@@ -99,16 +90,16 @@ struct HotkeyRecorderView: View {
             isRecording.toggle()
         } label: {
             Text(isRecording ? "Press shortcut..." : combo.displayString)
-                .font(.system(size: 11, weight: .medium, design: .monospaced))
+                .scaledFont(size: 11, weight: .medium, design: .monospaced)
                 .foregroundStyle(isRecording ? Catalyst.warning : Catalyst.cyan)
                 .padding(.horizontal, 10)
                 .padding(.vertical, 4)
                 .background(
                     isRecording ? Catalyst.warning.opacity(0.15) : Catalyst.cyan.opacity(0.1),
-                    in: .rect(cornerRadius: Catalyst.cornerRadius)
+                    in: .rect(cornerRadius: Catalyst.radiusMD)
                 )
                 .overlay(
-                    RoundedRectangle(cornerRadius: Catalyst.cornerRadius)
+                    RoundedRectangle(cornerRadius: Catalyst.radiusMD)
                         .strokeBorder(isRecording ? Catalyst.warning : Catalyst.cyan.opacity(0.3), lineWidth: 1)
                 )
                 .if(isRecording) { $0.neonGlow(Catalyst.warning, radius: 6) }

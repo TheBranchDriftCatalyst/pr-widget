@@ -6,15 +6,12 @@ struct ActivityFeed: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("ACTIVITY")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
-                .tracking(1)
-                .foregroundStyle(Catalyst.muted)
+            SectionHeader(title: "ACTIVITY")
                 .padding(.bottom, 4)
 
             if activities.isEmpty {
                 Text("No activity yet")
-                    .font(.system(size: 11))
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.subtle)
             } else {
                 ForEach(activities) { item in
@@ -41,19 +38,19 @@ struct ActivityFeed: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Image(systemName: "text.bubble")
-                    .font(.system(size: 9))
+                    .scaledFont(size: 9)
                     .foregroundStyle(Catalyst.blue)
                 Text(comment.author.login)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .scaledFont(size: 11, weight: .semibold, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
                 Spacer()
-                Text(relativeTime(date))
-                    .font(.system(size: 10, design: .monospaced))
+                Text(date.relativeTimeString)
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
             }
 
             Text(comment.body.prefix(200))
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Catalyst.muted)
                 .lineLimit(3)
         }
@@ -64,12 +61,12 @@ struct ActivityFeed: View {
         HStack(spacing: 4) {
             eventIcon(event.type)
             Text(event.description)
-                .font(.system(size: 11, design: .monospaced))
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(Catalyst.subtle)
                 .lineLimit(1)
             Spacer()
-            Text(relativeTime(event.createdAt))
-                .font(.system(size: 10, design: .monospaced))
+            Text(event.createdAt.relativeTimeString)
+                .scaledFont(size: 10, design: .monospaced)
                 .foregroundStyle(Catalyst.subtle)
         }
         .padding(.vertical, 2)
@@ -107,7 +104,7 @@ struct ActivityFeed: View {
                     .foregroundStyle(Catalyst.warning)
             }
         }
-        .font(.system(size: 9))
+        .scaledFont(size: 9)
         .shadow(color: iconColor(for: type).opacity(0.5), radius: 2)
     }
 
@@ -123,16 +120,5 @@ struct ActivityFeed: View {
         case .mentioned: Catalyst.pink
         case .headRefForcePushed: Catalyst.warning
         }
-    }
-
-    private func relativeTime(_ date: Date) -> String {
-        let interval = Date.now.timeIntervalSince(date)
-        let minutes = Int(interval / 60)
-        if minutes < 1 { return "now" }
-        if minutes < 60 { return "\(minutes)m" }
-        let hours = minutes / 60
-        if hours < 24 { return "\(hours)h" }
-        let days = hours / 24
-        return "\(days)d"
     }
 }

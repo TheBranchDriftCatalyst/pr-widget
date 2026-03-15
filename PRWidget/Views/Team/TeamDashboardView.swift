@@ -9,7 +9,7 @@ struct TeamDashboardView: View {
                 .font(.largeTitle)
                 .foregroundStyle(Catalyst.magenta)
             Text("TEAM DASHBOARD")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .scaledFont(size: 14, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.foreground)
             Text("Coming in Phase 3")

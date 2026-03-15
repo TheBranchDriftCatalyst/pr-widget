@@ -31,7 +31,10 @@ struct QuickActionsView: View {
             .tint(Catalyst.magenta)
             .controlSize(.small)
             .popover(isPresented: $showMergeOptions) {
-                MergeOptionsView { method in
+                MergeOptionsView(
+                    prTitle: pr.title,
+                    baseRefName: pr.baseRefName
+                ) { method in
                     showMergeOptions = false
                     onMerge(method)
                 }

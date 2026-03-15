@@ -125,6 +125,15 @@ final class DashboardStore {
         switch activeFilter {
         case .all:
             break
+        case .needsAction:
+            let ids = Set(state.needsAction.map(\.id))
+            prs = prs.filter { ids.contains($0.id) }
+        case .readyToShip:
+            let ids = Set(state.readyToShip.map(\.id))
+            prs = prs.filter { ids.contains($0.id) }
+        case .waitingOnOthers:
+            let ids = Set(state.waitingOnOthers.map(\.id))
+            prs = prs.filter { ids.contains($0.id) }
         case .myPRs:
             prs = prs.filter { $0.author.login == currentUser }
         case .reviewRequested:

@@ -4,10 +4,10 @@ import CatalystSwift
 struct DashboardView: View {
     @Environment(DashboardStore.self) var store
     @Environment(AccountManager.self) var accountManager
+    @FocusState private var isSearchFocused: Bool
 
     var onOpenSettings: () -> Void = {}
     var onTogglePin: () -> Void = {}
-    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
 
     var body: some View {
         @Bindable var store = store
@@ -19,7 +19,7 @@ struct DashboardView: View {
                     isPinned: store.isPinned,
                     blockedByMe: store.state.blockedByMeCount,
                     ownedByMe: store.state.ownedByMeCount,
-                    readyForQA: store.state.readyForQACount,
+                    readyToShip: store.state.readyToShipCount,
                     onRefresh: { Task { await store.refresh() } },
                     onTogglePin: onTogglePin,
                     onOpenSettings: onOpenSettings
@@ -35,7 +35,7 @@ struct DashboardView: View {
                 } else {
                     FilterBar(activeFilter: $store.activeFilter)
                     GlowDivider()
-                    SearchBar(text: $store.searchQuery)
+                    SearchBar(text: $store.searchQuery, isFocused: $isSearchFocused)
                     GlowDivider()
                     LabelFilterView(
                         availableLabels: store.availableLabels,
@@ -61,6 +61,27 @@ struct DashboardView: View {
                     .environment(accountManager)
             }
         }
+        .background {
+            // Keyboard shortcuts via hidden buttons
+            Group {
+                Button("") { Task { await store.refresh() } }
+                    .keyboardShortcut("r", modifiers: .command)
+
+                Button("") { isSearchFocused = true }
+                    .keyboardShortcut("f", modifiers: .command)
+
+                Button("") { onOpenSettings() }
+                    .keyboardShortcut(",", modifiers: .command)
+
+                // Cmd+1-4 for triage filter tabs
+                ForEach(Array(PRFilter.triageFilters.enumerated()), id: \.offset) { index, filter in
+                    Button("") { store.activeFilter = filter }
+                        .keyboardShortcut(KeyEquivalent(Character("\(index + 1)")), modifiers: .command)
+                }
+            }
+            .frame(width: 0, height: 0)
+            .opacity(0)
+        }
     }
 
     private var prListContent: some View {
@@ -74,7 +95,7 @@ struct DashboardView: View {
                 // Pinned section
                 let pinned = store.pinnedPRs
                 if !pinned.isEmpty {
-                    PinnedSection(prs: pinned, store: store, onOpenDiffPanel: onOpenDiffPanel)
+                    PinnedSection(prs: pinned, store: store)
                 }
 
                 // Repo groups
@@ -88,7 +109,6 @@ struct DashboardView: View {
                             prs: group.prs,
                             isCollapsed: store.collapsedRepos.contains(group.repoName),
                             store: store,
-                            onOpenDiffPanel: onOpenDiffPanel,
                             onToggle: {
                                 if store.collapsedRepos.contains(group.repoName) {
                                     store.collapsedRepos.remove(group.repoName)
@@ -122,30 +142,19 @@ struct DashboardView: View {
     }
 
     private var noMatchView: some View {
-        VStack(spacing: 8) {
-            Spacer()
-            Image(systemName: "magnifyingglass")
-                .font(.system(size: 28))
-                .foregroundStyle(Catalyst.subtle)
-            Text("NO MATCHES")
-                .font(.system(size: 12, weight: .bold, design: .monospaced))
-                .tracking(2)
-                .foregroundStyle(Catalyst.muted)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
-        .padding()
-        .accessibilityIdentifier(AccessibilityID.noMatchView)
+        EmptyState(icon: "magnifyingglass", title: "NO MATCHES")
+            .padding()
+            .accessibilityIdentifier(AccessibilityID.noMatchView)
     }
 
     private var noAccountView: some View {
         VStack(spacing: 16) {
             Spacer()
             Image(systemName: "person.badge.key")
-                .font(.system(size: 40))
+                .scaledFont(size: 40)
                 .foregroundStyle(Catalyst.magenta)
             Text("NO ACCOUNTS")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
+                .scaledFont(size: 14, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.foreground)
             Text("Add a GitHub account to get started.")
@@ -164,21 +173,12 @@ struct DashboardView: View {
     }
 
     private var emptyStateView: some View {
-        VStack(spacing: 12) {
-            Spacer()
-            Image(systemName: "checkmark.circle")
-                .font(.system(size: 40))
-                .foregroundStyle(Catalyst.cyan)
-            Text("INBOX ZERO")
-                .font(.system(size: 14, weight: .bold, design: .monospaced))
-                .tracking(2)
-                .foregroundStyle(Catalyst.foreground)
-            Text("No open pull requests need your attention.")
-                .font(.caption)
-                .foregroundStyle(Catalyst.muted)
-            Spacer()
-        }
-        .frame(maxWidth: .infinity)
+        EmptyState(
+            icon: "checkmark.circle",
+            title: "INBOX ZERO",
+            subtitle: "No open pull requests need your attention.",
+            iconColor: Catalyst.cyan
+        )
         .padding()
     }
 }
@@ -188,7 +188,6 @@ struct DashboardView: View {
 private struct PinnedSection: View {
     let prs: [PullRequest]
     let store: DashboardStore
-    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
 
     var body: some View {
         Section {
@@ -197,9 +196,6 @@ private struct PinnedSection: View {
                     PRRowContent(pr: pr, store: store)
                 }
                 .buttonStyle(.plain)
-                .simultaneousGesture(TapGesture().onEnded {
-                    onOpenDiffPanel(pr)
-                })
                 if pr.id != prs.last?.id {
                     GlowDivider()
                 }
@@ -207,17 +203,17 @@ private struct PinnedSection: View {
         } header: {
             HStack(spacing: 6) {
                 Image(systemName: "pin.fill")
-                    .font(.system(size: 9))
+                    .scaledFont(size: 9)
                     .foregroundStyle(Catalyst.yellow)
                     .shadow(color: Catalyst.yellow.opacity(0.5), radius: 3)
 
                 Text("PINNED")
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .tracking(1)
                     .foregroundStyle(Catalyst.foreground)
 
                 Text("\(prs.count)")
-                    .font(.system(size: 10, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 10, weight: .medium, design: .monospaced)
                     .foregroundStyle(Catalyst.yellow)
                     .padding(.horizontal, 5)
                     .padding(.vertical, 1)
@@ -239,7 +235,6 @@ private struct RepoGroupSection: View {
     let prs: [PullRequest]
     let isCollapsed: Bool
     let store: DashboardStore
-    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
     let onToggle: () -> Void
     let onCmdToggle: () -> Void
     var onDrop: (String) -> Void = { _ in }
@@ -252,9 +247,6 @@ private struct RepoGroupSection: View {
                         PRRowContent(pr: pr, store: store)
                     }
                     .buttonStyle(.plain)
-                    .simultaneousGesture(TapGesture().onEnded {
-                        onOpenDiffPanel(pr)
-                    })
                     if pr.id != prs.last?.id {
                         GlowDivider()
                     }
@@ -268,7 +260,7 @@ private struct RepoGroupSection: View {
     private var repoHeader: some View {
         HStack(spacing: 6) {
             Image(systemName: isCollapsed ? "chevron.right" : "chevron.down")
-                .font(.system(size: 9, weight: .bold))
+                .scaledFont(size: 9, weight: .bold)
                 .foregroundStyle(Catalyst.subtle)
                 .frame(width: 12)
                 .animation(.easeInOut(duration: 0.2), value: isCollapsed)
@@ -279,13 +271,13 @@ private struct RepoGroupSection: View {
                 .shadow(color: Catalyst.cyan.opacity(0.5), radius: 3)
 
             Text(repoName.uppercased())
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.foreground)
                 .lineLimit(1)
 
             Text("\(prs.count)")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .scaledFont(size: 10, weight: .medium, design: .monospaced)
                 .foregroundStyle(Catalyst.cyan)
                 .padding(.horizontal, 5)
                 .padding(.vertical, 1)
@@ -334,20 +326,18 @@ struct PRRowContent: View {
 
                     if store.isPinned(pr.id) {
                         Image(systemName: "pin.fill")
-                            .font(.system(size: 9))
+                            .scaledFont(size: 9)
                             .foregroundStyle(Catalyst.yellow)
                     }
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(pr.title)
-                            .font(.system(size: 14))
-                            .fontWeight(.medium)
+                            .scaledFont(size: 14, weight: .medium)
                             .foregroundStyle(Catalyst.foreground)
                             .lineLimit(2)
 
                         Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                            .font(.system(size: 11))
-                            .fontDesign(.monospaced)
+                            .scaledFont(size: 11, design: .monospaced)
                             .foregroundStyle(Catalyst.muted)
                     }
 
@@ -362,7 +352,7 @@ struct PRRowContent: View {
 
                     if pr.mergeable == .conflicting {
                         Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Catalyst.warning)
                     }
 
@@ -374,8 +364,7 @@ struct PRRowContent: View {
                         Text("-\(pr.deletions)")
                             .foregroundStyle(Catalyst.red)
                     }
-                    .font(.system(size: 11))
-                    .fontDesign(.monospaced)
+                    .scaledFont(size: 11, design: .monospaced)
                 }
 
                 if !pr.labels.isEmpty {

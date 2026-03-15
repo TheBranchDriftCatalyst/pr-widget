@@ -67,12 +67,24 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         setupWindowManager()
         NSLog("[PArr] Window manager set up")
         setupGlobalHotkey()
+        setupDiffPanelObserver()
 
         if accountManager.hasAccounts {
             Task {
                 await dashboardStore.refresh()
+                mentionTracker.checkForMentions(
+                    prs: dashboardStore.state.pullRequests,
+                    currentUser: dashboardStore.state.currentUser
+                )
+                updateBadge()
                 pollingScheduler.start { [weak self] in
-                    await self?.dashboardStore.refresh()
+                    guard let self else { return }
+                    await self.dashboardStore.refresh()
+                    self.mentionTracker.checkForMentions(
+                        prs: self.dashboardStore.state.pullRequests,
+                        currentUser: self.dashboardStore.state.currentUser
+                    )
+                    self.updateBadge()
                 }
             }
         }
@@ -82,7 +94,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "PR Widget")
+            let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "P-Arr")
             image?.isTemplate = true
             button.image = image
             button.action = #selector(statusItemClicked(_:))
@@ -134,9 +146,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 guard let self else { return }
                 self.dashboardStore.isPinned.toggle()
                 self.windowManager.setPinned(self.dashboardStore.isPinned)
-            },
-            onOpenDiffPanel: { [weak self] pr in
-                self?.openDiffPanel(for: pr)
             }
         )
         .environment(dashboardStore)
@@ -154,6 +163,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func setupGlobalHotkey() {
         hotkeyManager.register { [weak self] in
             self?.togglePanel()
+        }
+    }
+
+    private func setupDiffPanelObserver() {
+        NotificationCenter.default.addObserver(
+            forName: .openDiffPanel,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let pr = notification.userInfo?["pr"] as? PullRequest
+            Task { @MainActor in
+                guard let self, let pr else { return }
+                self.openDiffPanel(for: pr)
+            }
         }
     }
 
@@ -220,8 +243,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
-        ) { @Sendable [weak window] _ in
-            MainActor.assumeIsolated {
+        ) { [weak window] _ in
+            Task { @MainActor in
                 guard let window else { return }
                 Keys.settingsWidth.save(window.frame.width)
                 Keys.settingsHeight.save(window.frame.height)
@@ -268,9 +291,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             let diffY = mainFrame.minY              // match bottom (same top since same height)
             let diffHeight = mainFrame.height        // match main panel height
 
-            // Clamp to screen bounds
+            // Clamp to the screen the main panel is on (multi-monitor safe)
             var finalX = diffX
-            if let screen = NSScreen.main {
+            let panelScreen = NSScreen.screens.first(where: { $0.frame.intersects(mainFrame) })
+            if let screen = panelScreen ?? NSScreen.main {
                 let screenFrame = screen.visibleFrame
                 finalX = max(finalX, screenFrame.minX)
             }

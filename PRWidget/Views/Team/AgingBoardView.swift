@@ -7,7 +7,7 @@ struct AgingBoardView: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("PR AGING BOARD")
-                .font(.system(size: 13, weight: .bold, design: .monospaced))
+                .scaledFont(size: 13, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.cyan)
 

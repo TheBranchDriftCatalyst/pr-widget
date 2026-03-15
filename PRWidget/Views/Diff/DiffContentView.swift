@@ -3,7 +3,7 @@ import CatalystSwift
 
 struct DiffContentView: View {
     let file: PRFileDiff
-    var onReply: (String, String) async -> Void  // (threadId, body)
+    var onReply: (String, String) async throws -> Void  // (threadId, body)
 
     private var hunks: [DiffHunk] {
         guard let patch = file.patch else { return [] }
@@ -26,7 +26,7 @@ struct DiffContentView: View {
                             // Insert inline comment threads at this line
                             ForEach(threadsAtLine(line)) { thread in
                                 InlineCommentThread(thread: thread) { body in
-                                    await onReply(thread.id, body)
+                                    try await onReply(thread.id, body)
                                 }
                             }
                         }
@@ -39,7 +39,7 @@ struct DiffContentView: View {
     private var fileHeader: some View {
         HStack(spacing: 8) {
             Text(file.path)
-                .font(.system(size: 13, weight: .medium, design: .monospaced))
+                .scaledFont(size: 13, weight: .medium, design: .monospaced)
                 .foregroundStyle(Catalyst.foreground)
                 .lineLimit(1)
                 .truncationMode(.middle)
@@ -52,7 +52,7 @@ struct DiffContentView: View {
                 Text("-\(file.deletions)")
                     .foregroundStyle(Catalyst.red)
             }
-            .font(.system(size: 11, weight: .medium, design: .monospaced))
+            .scaledFont(size: 11, weight: .medium, design: .monospaced)
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
@@ -62,10 +62,10 @@ struct DiffContentView: View {
     private var noPatchView: some View {
         VStack(spacing: 8) {
             Image(systemName: "doc.text")
-                .font(.system(size: 24))
+                .scaledFont(size: 24)
                 .foregroundStyle(Catalyst.subtle)
             Text("Binary file or diff too large")
-                .font(.system(size: 12, design: .monospaced))
+                .scaledFont(size: 12, design: .monospaced)
                 .foregroundStyle(Catalyst.muted)
         }
         .frame(maxWidth: .infinity)
@@ -74,7 +74,7 @@ struct DiffContentView: View {
 
     private func hunkHeader(_ hunk: DiffHunk) -> some View {
         Text(hunk.header)
-            .font(.system(size: 11, design: .monospaced))
+            .scaledFont(size: 11, design: .monospaced)
             .foregroundStyle(Catalyst.blue)
             .padding(.horizontal, 12)
             .padding(.vertical, 4)
@@ -105,7 +105,7 @@ struct DiffContentView: View {
 
             Spacer()
         }
-        .font(.system(size: 12, design: .monospaced))
+        .scaledFont(size: 12, design: .monospaced)
         .padding(.vertical, 0.5)
         .background(lineBackground(line.type))
         .textSelection(.enabled)
