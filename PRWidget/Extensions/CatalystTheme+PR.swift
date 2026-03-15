@@ -13,5 +13,8 @@ extension Catalyst {
     public static let changesRequested = red
     public static let commented = blue
     public static let dismissed = muted
-    public static let pendingReview = yellow
+    public static let pendingReview = blue
+
+    // MARK: - Status Colors
+    public static let pinned = Color(red: 0.961, green: 0.620, blue: 0.043) // amber #f59e0b
 }
