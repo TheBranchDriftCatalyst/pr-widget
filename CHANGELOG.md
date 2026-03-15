@@ -4,6 +4,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Features
+
+- Add Homebrew self-update via Settings > Updates tab
+
+### Miscellaneous
+
+- Update homebrew-catalyst to p-arr v0.3.1
+
+## [0.3.1] - 2026-03-15
+
 ### Documentation
 
 - Add actor-critic agent loop contracts
