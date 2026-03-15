@@ -4,6 +4,7 @@ import CatalystSwift
 
 struct GeneralSettingsView: View {
     @Environment(HotkeyManager.self) var hotkeyManager
+    @AppStorage("PArr.ui.textScale") private var textScale: Double = 1.0
     @State private var isRecording = false
     @State private var pendingCombo: HotkeyCombo?
 
@@ -41,6 +42,21 @@ struct GeneralSettingsView: View {
                     .buttonStyle(.bordered)
                     .disabled(hotkeyManager.currentCombo == .default)
                 }
+            }
+            .padding(10)
+            .glassCard()
+
+            // Text scale section
+            VStack(alignment: .leading, spacing: 8) {
+                Text("TEXT SCALE")
+                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .tracking(1)
+                    .foregroundStyle(Catalyst.muted)
+
+                UIScaleSlider(scale: Binding(
+                    get: { CGFloat(textScale) },
+                    set: { textScale = Double($0) }
+                ))
             }
             .padding(10)
             .glassCard()

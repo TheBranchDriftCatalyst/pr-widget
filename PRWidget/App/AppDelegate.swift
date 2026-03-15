@@ -21,6 +21,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private enum Keys {
         static let settingsWidth = Persisted<Double>("PArr.settingsWidth", default: 600)
         static let settingsHeight = Persisted<Double>("PArr.settingsHeight", default: 620)
+        static let textScale = Persisted<Double>("PArr.ui.textScale", default: 1.0)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
@@ -144,6 +145,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         .environment(synopsisEngine)
         .environment(mentionTracker)
         .environment(pollingScheduler)
+        .modifier(TextScaleModifier())
 
         windowManager = WindowManager(contentView: contentView)
     }
@@ -193,6 +195,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             .environment(aiSettings)
             .environment(hotkeyManager)
             .environment(brewUpdater)
+            .modifier(TextScaleModifier())
 
         let w = Keys.settingsWidth.load()
         let h = Keys.settingsHeight.load()
@@ -282,5 +285,15 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         diffWindow = window
+    }
+}
+
+// MARK: - Text Scale Environment Propagation
+
+private struct TextScaleModifier: ViewModifier {
+    @AppStorage("PArr.ui.textScale") private var textScale: Double = 1.0
+
+    func body(content: Content) -> some View {
+        content.environment(\.catalystScale, CGFloat(textScale))
     }
 }

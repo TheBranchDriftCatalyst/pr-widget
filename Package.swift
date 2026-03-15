@@ -8,7 +8,7 @@ let package = Package(
         .executable(name: "PArr", targets: ["PArr"]),
     ],
     dependencies: [
-        .package(path: "../catalyst-swift"),
+        .package(name: "catalyst-swift", path: "catalyst-lib"),
     ],
     targets: [
         .executableTarget(

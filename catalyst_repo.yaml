@@ -3,7 +3,7 @@ name: "pr-widget"
 description: "Native macOS floating dashboard for GitHub PR management with urgency scoring and quick actions"
 repo_url: "https://github.com/TheBranchDriftCatalyst/pr-widget"
 
-status: "wip"
+status: "active"
 
 tech_stack:
   languages:
