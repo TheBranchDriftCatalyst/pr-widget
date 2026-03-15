@@ -7,6 +7,7 @@ struct QuickActionsView: View {
     let onMerge: (MergeMethod) -> Void
     let onRequestChanges: (String) -> Void
 
+    @AppStorage("PArr.mergeEnabled") private var mergeEnabled: Bool = true
     @State private var showMergeOptions = false
     @State private var showRequestChanges = false
     @State private var changeComment = ""
@@ -30,6 +31,8 @@ struct QuickActionsView: View {
             .buttonStyle(.bordered)
             .tint(Catalyst.magenta)
             .controlSize(.small)
+            .disabled(!mergeEnabled)
+            .catalystTooltip(mergeEnabled ? "Merge this PR" : "Merging disabled in Settings")
             .popover(isPresented: $showMergeOptions) {
                 MergeOptionsView(
                     prTitle: pr.title,

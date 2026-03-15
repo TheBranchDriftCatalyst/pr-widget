@@ -4,12 +4,17 @@ import CatalystSwift
 
 struct GeneralSettingsView: View {
     @Environment(HotkeyManager.self) var hotkeyManager
+    @Environment(IconThemeManager.self) var iconManager
     @AppStorage("PArr.ui.textScale") private var textScale: Double = 1.0
+    @AppStorage("PArr.mergeEnabled") private var mergeEnabled: Bool = true
     @State private var isRecording = false
     @State private var pendingCombo: HotkeyCombo?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
+            // Icon theme section
+            IconThemePickerView(manager: iconManager)
+
             // Hotkey section
             VStack(alignment: .leading, spacing: 8) {
                 SectionHeader(title: "KEYBOARD SHORTCUT")
@@ -51,6 +56,26 @@ struct GeneralSettingsView: View {
                     get: { CGFloat(textScale) },
                     set: { textScale = Double($0) }
                 ))
+            }
+            .padding(10)
+            .glassCard()
+
+            // Safety section
+            VStack(alignment: .leading, spacing: 8) {
+                SectionHeader(title: "SAFETY")
+
+                Toggle(isOn: $mergeEnabled) {
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("Allow Merge Actions")
+                            .scaledFont(size: 12, design: .monospaced)
+                            .foregroundStyle(Catalyst.foreground)
+                        Text("Disable to prevent accidental merges from the dashboard")
+                            .scaledFont(size: 10)
+                            .foregroundStyle(Catalyst.subtle)
+                    }
+                }
+                .toggleStyle(.switch)
+                .tint(Catalyst.cyan)
             }
             .padding(10)
             .glassCard()

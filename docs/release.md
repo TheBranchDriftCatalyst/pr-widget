@@ -8,8 +8,8 @@ P-Arr is distributed as a macOS app via Homebrew cask. This document covers the 
 - [GitHub CLI](https://cli.github.com) (`gh`) installed and authenticated
 - [go-task](https://taskfile.dev) installed
 - [git-cliff](https://git-cliff.org) installed (for changelog generation)
-- Push access to `TheBranchDriftCatalyst/pr-widget` and `TheBranchDriftCatalyst/homebrew-catalyst`
-- The `homebrew-catalyst` submodule initialized (`task cask:setup`)
+- Push access to `TheBranchDriftCatalyst/pr-widget` and `TheBranchDriftCatalyst/catalyst-cask`
+- The `catalyst-cask` submodule initialized (`task cask:setup`)
 
 ## Quick Reference
 
@@ -72,8 +72,8 @@ task publish
 This runs:
 1. `task package` (if not already done)
 2. Creates a GitHub release via `gh release create` with the zip attached
-3. Updates `homebrew-catalyst/Casks/p-arr.rb` with the new version and SHA256
-4. Commits and pushes the updated cask to the `homebrew-catalyst` submodule
+3. Updates `catalyst-cask/Casks/p-arr.rb` with the new version and SHA256
+4. Commits and pushes the updated cask to the `catalyst-cask` submodule
 5. Updates the submodule ref in the parent repo
 
 ### 5. Push everything
@@ -90,7 +90,7 @@ Pushes the release commit, tag, and submodule ref update to the remote.
 |------|-------|------------|
 | `VERSION` | Plain text version | `task version:bump` |
 | `project.yml` | `MARKETING_VERSION` | `task version:bump` |
-| `homebrew-catalyst/Casks/p-arr.rb` | `version` + `sha256` | `task cask:update` (called by `publish`) |
+| `catalyst-cask/Casks/p-arr.rb` | `version` + `sha256` | `task cask:update` (called by `publish`) |
 
 The `VERSION` file is the single source of truth. All other version references are derived from it.
 
@@ -107,7 +107,7 @@ The `VERSION` file is the single source of truth. All other version references a
 | `task package` | Build release + bundle .app + create .zip |
 | `task publish` | GitHub release + Homebrew cask update |
 | `task cask:update` | Update cask formula with current version/SHA |
-| `task cask:setup` | Initialize the homebrew-catalyst submodule |
+| `task cask:setup` | Initialize the catalyst-cask submodule |
 
 ## Homebrew Tap
 
@@ -118,7 +118,7 @@ brew tap TheBranchDriftCatalyst/catalyst
 brew install --cask p-arr
 ```
 
-The tap lives in the `homebrew-catalyst/` submodule (pointing to `TheBranchDriftCatalyst/homebrew-catalyst`). The `task publish` command handles updating it automatically.
+The tap lives in the `catalyst-cask/` submodule (pointing to `TheBranchDriftCatalyst/catalyst-cask`). The `task publish` command handles updating it automatically.
 
 Users update with:
 

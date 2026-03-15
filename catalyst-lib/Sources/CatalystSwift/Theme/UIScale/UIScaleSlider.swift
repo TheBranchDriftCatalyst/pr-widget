@@ -1,8 +1,31 @@
 import SwiftUI
 
+/// A settings control that lets users adjust the Catalyst UI text scale.
+///
+/// Displays a labeled slider (80% to 140% in 5% steps), the current
+/// percentage, a Reset button (visible when not at 100%), and a live
+/// preview line showing the effect on sample text.
+///
+/// ## Usage
+///
+/// ```swift
+/// struct SettingsView: View {
+///     @Binding var scale: CGFloat
+///
+///     var body: some View {
+///         UIScaleSlider(scale: $scale)
+///     }
+/// }
+/// ```
+///
+/// - Note: You are responsible for persisting the scale value and injecting
+///   it into the environment via `.environment(\.catalystScale, scale)`.
 public struct UIScaleSlider: View {
+    /// Binding to the current scale factor.
     @Binding public var scale: CGFloat
 
+    /// Creates a UI scale slider.
+    /// - Parameter scale: A binding to the scale factor (typically `1.0`).
     public init(scale: Binding<CGFloat>) {
         self._scale = scale
     }

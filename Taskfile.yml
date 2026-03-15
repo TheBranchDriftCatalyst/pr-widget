@@ -273,15 +273,15 @@ tasks:
 
         # Commit + push inside the submodule
         echo "==> Publishing tap update..."
-        cd homebrew-catalyst
+        cd catalyst-cask
         git add Casks/p-arr.rb
         git commit -m "Update p-arr to v${VER}"
         git push origin main
         cd ..
 
         # Update submodule ref in parent repo
-        git add homebrew-catalyst
-        git commit -m "chore: update homebrew-catalyst to p-arr v${VER}"
+        git add catalyst-cask
+        git commit -m "chore: update catalyst-cask to p-arr v${VER}"
 
         echo ""
         echo "✅ Published v${VER}"
@@ -293,7 +293,7 @@ tasks:
       - |
         VER=$(tr -d '[:space:]' < VERSION)
         ZIP=".build/P-Arr-${VER}.zip"
-        CASK="homebrew-catalyst/Casks/p-arr.rb"
+        CASK="catalyst-cask/Casks/p-arr.rb"
 
         if [[ ! -f "$ZIP" ]]; then
           echo "Error: $ZIP not found. Run 'task package' first."
@@ -314,8 +314,70 @@ tasks:
         echo "    version: ${VER}"
         echo "    sha256:  ${SHA256}"
 
+  # ── Icon Generation ──────────────────────────────────────────────
+
+  icons:generate:
+    desc: Generate macOS icon assets from source PNGs
+    cmds:
+      - ./scripts/generate-icons.sh --variant all --active a
+
+  icons:generate:a:
+    desc: Generate variant A icons only
+    cmds:
+      - ./scripts/generate-icons.sh --variant a --active a
+
+  icons:generate:b:
+    desc: Generate variant B icons only
+    cmds:
+      - ./scripts/generate-icons.sh --variant b --active b
+
+  icons:clean:
+    desc: Remove generated icon assets
+    cmds:
+      - rm -rf PRWidget/Resources/Assets.xcassets/AppIcon-A.appiconset
+      - rm -rf PRWidget/Resources/Assets.xcassets/AppIcon-B.appiconset
+      - rm -rf PRWidget/Resources/Assets.xcassets/MenuBarIcon-A.imageset
+      - rm -rf PRWidget/Resources/Assets.xcassets/MenuBarIcon-B.imageset
+      - rm -rf PRWidget/Resources/Assets.xcassets/AppIconPreview-A.imageset
+      - rm -rf PRWidget/Resources/Assets.xcassets/AppIconPreview-B.imageset
+      - rm -rf .build/icons
+      - echo "✅ Generated icon assets cleaned"
+
+  # ── Documentation ──────────────────────────────────────────────
+
+  docs:build:
+    desc: Build DocC documentation for catalyst-lib
+    cmds:
+      - |
+        cd catalyst-lib
+        swift package generate-documentation \
+          --target CatalystSwift \
+          --output-path ../.build/docs
+        echo "✅ Docs built at .build/docs/"
+
+  docs:preview:
+    desc: Preview DocC documentation in browser
+    cmds:
+      - |
+        cd catalyst-lib
+        swift package --disable-sandbox preview-documentation --target CatalystSwift
+
+  docs:export:
+    desc: Export DocC documentation as static HTML
+    cmds:
+      - |
+        cd catalyst-lib
+        swift package generate-documentation \
+          --target CatalystSwift \
+          --transform-for-static-hosting \
+          --hosting-base-path CatalystSwift \
+          --output-path ../.build/docs-site
+        echo "✅ Static docs exported to .build/docs-site/"
+
+  # ── Packaging & Distribution ──────────────────────────────────
+
   cask:setup:
-    desc: "Initialize/update the homebrew-catalyst submodule"
+    desc: "Initialize/update the catalyst-cask submodule"
     cmds:
       - git submodule update --init --recursive
-      - echo "✅ homebrew-catalyst submodule ready"
+      - echo "✅ catalyst-cask submodule ready"

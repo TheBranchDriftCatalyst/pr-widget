@@ -1,11 +1,29 @@
 import SwiftUI
 
-/// Expandable changelog viewer with Catalyst styling.
-/// Renders parsed changelog releases as expandable cards.
+/// An expandable changelog viewer with Catalyst styling.
+///
+/// Renders parsed ``ChangelogRelease`` values as expandable glass cards.
+/// The most recent release is expanded by default. Section titles are
+/// color-coded by type (Added, Fixed, etc.), and breaking changes are
+/// highlighted in ``Catalyst/red``.
+///
+/// ## Usage
+///
+/// ```swift
+/// let releases = ChangelogParser.fromBundle()
+///
+/// ChangelogView(releases: releases)
+/// ```
 public struct ChangelogView: View {
+    /// The releases to display.
     public let releases: [ChangelogRelease]
+
     @State private var expandedVersions: Set<String>
 
+    /// Creates a changelog view.
+    ///
+    /// - Parameter releases: The parsed changelog releases to display.
+    ///   The first release is expanded by default.
     public init(releases: [ChangelogRelease]) {
         self.releases = releases
         // Expand the most recent release by default

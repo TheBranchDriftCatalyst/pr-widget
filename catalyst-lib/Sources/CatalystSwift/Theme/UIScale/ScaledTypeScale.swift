@@ -1,8 +1,41 @@
 import SwiftUI
 
+/// A predefined font token in the Catalyst type scale.
+///
+/// Each token maps to a specific combination of size, weight, and design
+/// that matches the static ``Catalyst`` type scale functions. When used
+/// with ``CatalystFontModifier`` via the `.catalystFont(_:)` modifier,
+/// the token's base size is multiplied by the current `catalystScale`
+/// environment value.
+///
+/// ## Usage
+///
+/// ```swift
+/// Text("Dashboard")
+///     .catalystFont(.heading)
+///
+/// Text("12 open PRs")
+///     .catalystFont(.body)
+/// ```
 public enum CatalystFontToken: Sendable {
-    case display, heading, subheading, body, caption, label, micro, nano
+    /// Display: 15pt, semibold, default design.
+    case display
+    /// Heading: 14pt, medium, default design.
+    case heading
+    /// Subheading: 13pt, bold, monospaced.
+    case subheading
+    /// Body: 12pt, regular, monospaced.
+    case body
+    /// Caption: 11pt, medium, monospaced.
+    case caption
+    /// Label: 10pt, bold, monospaced.
+    case label
+    /// Micro: 9pt, bold, monospaced.
+    case micro
+    /// Nano: 8pt, bold, monospaced.
+    case nano
 
+    /// The base point size for this token before scaling.
     var size: CGFloat {
         switch self {
         case .display: 15
@@ -16,6 +49,7 @@ public enum CatalystFontToken: Sendable {
         }
     }
 
+    /// The font weight for this token.
     var weight: Font.Weight {
         switch self {
         case .display: .semibold
@@ -27,6 +61,7 @@ public enum CatalystFontToken: Sendable {
         }
     }
 
+    /// The font design for this token.
     var design: Font.Design {
         switch self {
         case .display, .heading: .default
@@ -35,8 +70,14 @@ public enum CatalystFontToken: Sendable {
     }
 }
 
+/// A view modifier that applies a ``CatalystFontToken`` with dynamic scaling.
+///
+/// Reads the `catalystScale` environment value and multiplies it with the
+/// token's base size to produce the final font.
 public struct CatalystFontModifier: ViewModifier {
     @Environment(\.catalystScale) private var scale
+
+    /// The font token to apply.
     let token: CatalystFontToken
 
     public func body(content: Content) -> some View {
@@ -45,7 +86,18 @@ public struct CatalystFontModifier: ViewModifier {
 }
 
 extension View {
-    /// Apply a type scale token that respects catalystScale
+    /// Applies a Catalyst type scale token that respects the `catalystScale` environment value.
+    ///
+    /// This is the preferred way to set fonts in Catalyst apps, as it
+    /// automatically scales with the user's text size preference.
+    ///
+    /// ```swift
+    /// Text("Status")
+    ///     .catalystFont(.caption)
+    /// ```
+    ///
+    /// - Parameter token: The type scale token to apply.
+    /// - Returns: A view with the scaled font applied.
     public func catalystFont(_ token: CatalystFontToken) -> some View {
         modifier(CatalystFontModifier(token: token))
     }

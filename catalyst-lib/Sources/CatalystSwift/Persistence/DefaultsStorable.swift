@@ -1,8 +1,36 @@
 import Foundation
 
-/// Protocol for types that can be stored in UserDefaults.
+/// A protocol for types that can be read from and written to `UserDefaults`.
+///
+/// Conform custom types to this protocol to use them with ``Persisted``.
+/// Out-of-the-box conformances are provided for `Bool`, `String`, `Int`,
+/// `Double`, `Data`, `Date`, and `[String]`.
+///
+/// ## Usage
+///
+/// ```swift
+/// extension URL: DefaultsStorable {
+///     public static func read(from defaults: UserDefaults, forKey key: String) -> URL? {
+///         defaults.url(forKey: key)
+///     }
+///
+///     public func write(to defaults: UserDefaults, forKey key: String) {
+///         defaults.set(self, forKey: key)
+///     }
+/// }
+/// ```
 public protocol DefaultsStorable: Sendable {
+    /// Reads a value from the given `UserDefaults` suite.
+    /// - Parameters:
+    ///   - defaults: The UserDefaults suite to read from.
+    ///   - key: The key to look up.
+    /// - Returns: The stored value, or `nil` if not found.
     static func read(from defaults: UserDefaults, forKey key: String) -> Self?
+
+    /// Writes this value to the given `UserDefaults` suite.
+    /// - Parameters:
+    ///   - defaults: The UserDefaults suite to write to.
+    ///   - key: The key to store under.
     func write(to defaults: UserDefaults, forKey key: String)
 }
 

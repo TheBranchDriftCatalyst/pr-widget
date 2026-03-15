@@ -17,6 +17,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let pollingScheduler = PollingScheduler()
     private let hotkeyManager = HotkeyManager()
     let brewUpdater = BrewSelfUpdater(caskName: "p-arr", appName: "PArr")
+    let iconThemeManager = IconThemeManager(config: IconThemeConfig(
+        appPrefix: "p-arr",
+        persistenceKey: "PArr.iconVariant"
+    ))
 
     private enum Keys {
         static let settingsWidth = Persisted<Double>("PArr.settingsWidth", default: 600)
@@ -94,12 +98,33 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         statusItem = NSStatusBar.system.statusItem(withLength: NSStatusItem.variableLength)
 
         if let button = statusItem.button {
-            let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "P-Arr")
-            image?.isTemplate = true
-            button.image = image
+            updateStatusItemIcon(button)
             button.action = #selector(statusItemClicked(_:))
             button.sendAction(on: [.leftMouseUp, .rightMouseUp])
             button.target = self
+        }
+
+        // Update menu bar icon when variant changes
+        NotificationCenter.default.addObserver(
+            forName: .iconVariantDidChange,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor in
+                guard let self, let button = self.statusItem?.button else { return }
+                self.updateStatusItemIcon(button)
+            }
+        }
+    }
+
+    private func updateStatusItemIcon(_ button: NSStatusBarButton) {
+        if let customIcon = iconThemeManager.menuBarIcon() {
+            button.image = customIcon
+        } else {
+            // Fallback to SF Symbol
+            let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "P-Arr")
+            image?.isTemplate = true
+            button.image = image
         }
     }
 
@@ -155,6 +180,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         .environment(mentionTracker)
         .environment(pollingScheduler)
         .environment(brewUpdater)
+        .environment(iconThemeManager)
         .modifier(TextScaleModifier())
 
         windowManager = WindowManager(contentView: contentView)
@@ -219,6 +245,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             .environment(aiSettings)
             .environment(hotkeyManager)
             .environment(brewUpdater)
+            .environment(iconThemeManager)
             .modifier(TextScaleModifier())
 
         let w = Keys.settingsWidth.load()

@@ -2,12 +2,27 @@ import Foundation
 
 // MARK: - Models
 
+/// A single changelog release, containing a version, optional date, and sections.
+///
+/// Produced by ``ChangelogParser/parse(_:)`` from a Keep a Changelog
+/// or git-cliff markdown string.
 public struct ChangelogRelease: Identifiable, Sendable {
     public let id: String
+
+    /// The version string (e.g., `"0.4.0"`).
     public let version: String
+
+    /// The release date string, if present (e.g., `"2025-01-15"`).
     public let date: String?
+
+    /// The sections in this release (e.g., "Added", "Fixed").
     public let sections: [ChangelogSection]
 
+    /// Creates a changelog release.
+    /// - Parameters:
+    ///   - version: The version string.
+    ///   - date: An optional date string.
+    ///   - sections: The changelog sections.
     public init(version: String, date: String?, sections: [ChangelogSection]) {
         self.id = version
         self.version = version
@@ -16,11 +31,20 @@ public struct ChangelogRelease: Identifiable, Sendable {
     }
 }
 
+/// A section within a changelog release (e.g., "Added", "Fixed", "Breaking Changes").
 public struct ChangelogSection: Identifiable, Sendable {
     public let id: String
+
+    /// The section title (e.g., `"Added"`, `"Fixed"`).
     public let title: String
+
+    /// The entries in this section.
     public let entries: [ChangelogEntry]
 
+    /// Creates a changelog section.
+    /// - Parameters:
+    ///   - title: The section heading.
+    ///   - entries: The changelog entries.
     public init(title: String, entries: [ChangelogEntry]) {
         self.id = title
         self.title = title
@@ -28,12 +52,24 @@ public struct ChangelogSection: Identifiable, Sendable {
     }
 }
 
+/// A single entry within a changelog section.
 public struct ChangelogEntry: Identifiable, Sendable {
     public let id: String
+
+    /// An optional scope prefix (e.g., `"auth"`, `"dashboard"`).
     public let scope: String?
+
+    /// The entry message text.
     public let message: String
+
+    /// Whether this entry is a breaking change.
     public let isBreaking: Bool
 
+    /// Creates a changelog entry.
+    /// - Parameters:
+    ///   - scope: An optional scope prefix.
+    ///   - message: The entry message.
+    ///   - isBreaking: Whether this is a breaking change. Defaults to `false`.
     public init(scope: String?, message: String, isBreaking: Bool = false) {
         self.id = UUID().uuidString
         self.scope = scope
@@ -44,8 +80,37 @@ public struct ChangelogEntry: Identifiable, Sendable {
 
 // MARK: - Parser
 
+/// Parses Keep a Changelog / git-cliff markdown into structured release models.
+///
+/// The parser recognizes:
+/// - `## [version] - date` release headers
+/// - `### Section` section headers
+/// - `- message` and `- **scope**: message` entries
+/// - `**breaking**` / `**BREAKING**` / `[**breaking**]` prefixes
+///
+/// ## Usage
+///
+/// ```swift
+/// let markdown = """
+/// ## [0.4.0] - 2025-01-15
+///
+/// ### Added
+/// - **dashboard**: New team view
+/// - Real-time polling
+///
+/// ### Fixed
+/// - **auth**: Token refresh bug
+/// """
+///
+/// let releases = ChangelogParser.parse(markdown)
+/// // releases[0].version == "0.4.0"
+/// // releases[0].sections.count == 2
+/// ```
 public enum ChangelogParser {
-    /// Parse a Keep a Changelog / git-cliff markdown string into releases.
+    /// Parses a Keep a Changelog / git-cliff markdown string into releases.
+    ///
+    /// - Parameter markdown: The raw markdown string.
+    /// - Returns: An array of ``ChangelogRelease`` values, ordered as they appear.
     public static func parse(_ markdown: String) -> [ChangelogRelease] {
         var releases: [ChangelogRelease] = []
         var currentVersion: String?
@@ -107,7 +172,10 @@ public enum ChangelogParser {
         return releases
     }
 
-    /// Convenience: load and parse CHANGELOG.md from a bundle.
+    /// Loads and parses `CHANGELOG.md` from a bundle.
+    ///
+    /// - Parameter bundle: The bundle containing the changelog resource. Defaults to `.main`.
+    /// - Returns: Parsed releases, or an empty array if the file is missing.
     public static func fromBundle(_ bundle: Bundle = .main) -> [ChangelogRelease] {
         guard let url = bundle.url(forResource: "CHANGELOG", withExtension: "md"),
               let content = try? String(contentsOf: url, encoding: .utf8) else {
