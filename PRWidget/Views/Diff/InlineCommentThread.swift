@@ -3,11 +3,11 @@ import CatalystSwift
 
 struct InlineCommentThread: View {
     let thread: PRReviewThread
-    var onReply: (String) async -> Void
+    var onReply: (String) async throws -> Void
 
     @State private var isExpanded: Bool
 
-    init(thread: PRReviewThread, onReply: @escaping (String) async -> Void) {
+    init(thread: PRReviewThread, onReply: @escaping (String) async throws -> Void) {
         self.thread = thread
         self.onReply = onReply
         self._isExpanded = State(initialValue: !thread.isResolved)
@@ -28,25 +28,25 @@ struct InlineCommentThread: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 8, weight: .bold))
+                        .scaledFont(size: 8, weight: .bold)
                         .foregroundStyle(Catalyst.subtle)
                         .frame(width: 10)
 
                     Image(systemName: "text.bubble.fill")
-                        .font(.system(size: 10))
+                        .scaledFont(size: 10)
                         .foregroundStyle(thread.isResolved ? Catalyst.subtle : Catalyst.blue)
 
                     Text("\(thread.comments.count) comment\(thread.comments.count == 1 ? "" : "s")")
-                        .font(.system(size: 10, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 10, weight: .medium, design: .monospaced)
                         .foregroundStyle(Catalyst.muted)
 
                     if !isExpanded, let firstAuthor = thread.comments.first?.author.login {
                         Text("@\(firstAuthor):")
-                            .font(.system(size: 10, weight: .medium, design: .monospaced))
+                            .scaledFont(size: 10, weight: .medium, design: .monospaced)
                             .foregroundStyle(Catalyst.muted)
 
                         Text(previewText)
-                            .font(.system(size: 11))
+                            .scaledFont(size: 11)
                             .foregroundStyle(Catalyst.subtle)
                             .lineLimit(1)
                             .truncationMode(.tail)
@@ -54,7 +54,7 @@ struct InlineCommentThread: View {
 
                     if thread.isResolved {
                         Text("RESOLVED")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 9, weight: .bold, design: .monospaced)
                             .foregroundStyle(Catalyst.subtle)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
@@ -63,7 +63,7 @@ struct InlineCommentThread: View {
 
                     if thread.isOutdated {
                         Text("OUTDATED")
-                            .font(.system(size: 9, weight: .bold, design: .monospaced))
+                            .scaledFont(size: 9, weight: .bold, design: .monospaced)
                             .foregroundStyle(Catalyst.yellow)
                             .padding(.horizontal, 5)
                             .padding(.vertical, 1)
@@ -74,7 +74,7 @@ struct InlineCommentThread: View {
 
                     if !isExpanded, let lastComment = thread.comments.last {
                         Text(relativeTime(lastComment.createdAt))
-                            .font(.system(size: 10, design: .monospaced))
+                            .scaledFont(size: 10, design: .monospaced)
                             .foregroundStyle(Catalyst.subtle)
                     }
                 }
@@ -111,18 +111,18 @@ struct InlineCommentThread: View {
         VStack(alignment: .leading, spacing: 3) {
             HStack(spacing: 4) {
                 Text(comment.author.login)
-                    .font(.system(size: 11, weight: .semibold, design: .monospaced))
+                    .scaledFont(size: 11, weight: .semibold, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
 
                 Spacer()
 
                 Text(relativeTime(comment.createdAt))
-                    .font(.system(size: 10, design: .monospaced))
+                    .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
             }
 
             Text(comment.body)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Catalyst.muted)
                 .textSelection(.enabled)
         }

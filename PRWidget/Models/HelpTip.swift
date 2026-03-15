@@ -15,7 +15,7 @@ extension HelpTip {
             id: "hotkey-toggle",
             category: HelpCategory.shortcuts.rawValue,
             title: "Toggle Panel",
-            description: "Show or hide the PR Widget floating panel from anywhere on your Mac.",
+            description: "Show or hide the P-Arr floating panel from anywhere on your Mac.",
             shortcut: "⌘⇧⌥P",
             icon: "rectangle.on.rectangle"
         ),

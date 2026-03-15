@@ -25,12 +25,12 @@ struct DashboardHeaderBar: View {
         HStack(spacing: 8) {
             VStack(alignment: .leading, spacing: 1) {
                 HStack(spacing: 6) {
-                    Text("PR WIDGET")
-                        .font(.system(size: 13, weight: .bold, design: .monospaced))
+                    Text("P-ARR")
+                        .scaledFont(size: 13, weight: .bold, design: .monospaced)
                         .tracking(2)
                         .foregroundStyle(Catalyst.cyan)
                     Text("v\(Bundle.main.appVersion)")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 9, weight: .medium, design: .monospaced)
                         .foregroundStyle(Catalyst.subtle)
                 }
             }
@@ -141,9 +141,9 @@ struct DashboardHeaderBar: View {
     private func countBadge(_ count: Int, color: Color, icon: String, label: String) -> some View {
         HStack(spacing: 2) {
             Image(systemName: icon)
-                .font(.system(size: 8))
+                .scaledFont(size: 8)
             Text("\(count)")
-                .font(.system(size: 10, weight: .medium, design: .monospaced))
+                .scaledFont(size: 10, weight: .medium, design: .monospaced)
         }
         .foregroundStyle(color)
         .help(label)

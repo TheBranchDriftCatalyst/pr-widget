@@ -42,8 +42,10 @@ final class WindowManager {
         hostingView.layer?.shadowOffset = CGSize(width: 0, height: -2)
         hostingView.layer?.shadowOpacity = 1
 
-        // Subtle pulsing glow
-        startGlowPulse(layer: hostingView.layer)
+        // Subtle pulsing glow (respects Reduce Motion)
+        if !NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            startGlowPulse(layer: hostingView.layer)
+        }
 
         panel.onResignKey = { [weak self] in
             guard let self, !self.isPinned else { return }
@@ -81,14 +83,21 @@ final class WindowManager {
 
     func show(relativeTo statusItem: NSStatusItem?) {
         positionBelow(statusItem)
-        panel.alphaValue = 0
-        panel.makeKeyAndOrderFront(nil)
-        NSApp.activate()
 
-        NSAnimationContext.runAnimationGroup { ctx in
-            ctx.duration = 0.15
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
-            panel.animator().alphaValue = 1
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            panel.alphaValue = 1
+            panel.makeKeyAndOrderFront(nil)
+            NSApp.activate()
+        } else {
+            panel.alphaValue = 0
+            panel.makeKeyAndOrderFront(nil)
+            NSApp.activate()
+
+            NSAnimationContext.runAnimationGroup { ctx in
+                ctx.duration = 0.15
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeOut)
+                panel.animator().alphaValue = 1
+            }
         }
     }
 
@@ -96,16 +105,21 @@ final class WindowManager {
         let size = panel.frame.size
         Keys.windowWidth.save(size.width)
         Keys.windowHeight.save(size.height)
-        let panelRef = panel
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.12
-            ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
-            panelRef.animator().alphaValue = 0
-        }, completionHandler: {
-            Task { @MainActor in
-                panelRef.orderOut(nil)
-            }
-        })
+
+        if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
+            panel.orderOut(nil)
+        } else {
+            let panelRef = panel
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.12
+                ctx.timingFunction = CAMediaTimingFunction(name: .easeIn)
+                panelRef.animator().alphaValue = 0
+            }, completionHandler: {
+                Task { @MainActor in
+                    panelRef.orderOut(nil)
+                }
+            })
+        }
     }
 
     func setPinned(_ pinned: Bool) {
@@ -125,8 +139,8 @@ final class WindowManager {
         var x = buttonFrame.midX - currentSize.width / 2
         let y = buttonFrame.minY - currentSize.height - 4
 
-        // Clamp to screen bounds
-        if let screen = NSScreen.main ?? NSScreen.screens.first {
+        // Clamp to the screen the status item is on (multi-monitor safe)
+        if let screen = buttonWindow.screen ?? NSScreen.main {
             let screenFrame = screen.visibleFrame
             let maxX = screenFrame.maxX - currentSize.width - 8
             let minX = screenFrame.minX + 8
