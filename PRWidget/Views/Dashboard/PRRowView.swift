@@ -28,13 +28,13 @@ struct PRRowView: View {
 
                         VStack(alignment: .leading, spacing: 2) {
                             Text(pr.title)
-                                .font(.subheadline)
+                                .font(.system(size: 14))
                                 .fontWeight(.medium)
                                 .foregroundStyle(Catalyst.foreground)
                                 .lineLimit(2)
 
                             Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                                .font(.caption)
+                                .font(.system(size: 11))
                                 .fontDesign(.monospaced)
                                 .foregroundStyle(Catalyst.muted)
                         }
@@ -52,7 +52,7 @@ struct PRRowView: View {
 
                         if pr.mergeable == .conflicting {
                             Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
-                                .font(.caption)
+                                .font(.system(size: 11))
                                 .foregroundStyle(Catalyst.warning)
                         }
 
@@ -65,7 +65,7 @@ struct PRRowView: View {
                             Text("-\(pr.deletions)")
                                 .foregroundStyle(Catalyst.red)
                         }
-                        .font(.caption)
+                        .font(.system(size: 11))
                         .fontDesign(.monospaced)
                     }
 
@@ -83,6 +83,7 @@ struct PRRowView: View {
             }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityID.prRow(id: pr.id))
         .accessibilityLabel("\(pr.title), \(pr.repository.nameWithOwner) number \(pr.number)")
         .hoverGlow(accentColor)
         .contextMenu {

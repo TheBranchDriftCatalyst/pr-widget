@@ -33,3 +33,6 @@ Package.resolved
 .beads/
 .task/
 .claude-context/
+
+# Submodules (don't ignore)
+!homebrew-catalyst/

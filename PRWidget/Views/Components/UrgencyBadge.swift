@@ -7,7 +7,7 @@ struct UrgencyBadge: View {
 
     var body: some View {
         Text(ageText)
-            .font(.caption)
+            .font(.system(size: 12))
             .fontWeight(.medium)
             .fontDesign(.monospaced)
             .foregroundStyle(urgencyColor)
@@ -19,6 +19,7 @@ struct UrgencyBadge: View {
                     .strokeBorder(urgencyColor.opacity(0.3), lineWidth: 0.5)
             )
             .shadow(color: urgencyColor.opacity(0.3), radius: 3)
+            .accessibilityIdentifier(AccessibilityID.urgencyBadge)
     }
 
     private var urgencyColor: Color {

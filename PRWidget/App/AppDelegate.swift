@@ -8,11 +8,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var statusItem: NSStatusItem!
     private var windowManager: WindowManager!
     private var settingsWindow: NSWindow?
+    private var diffWindow: NSWindow?
     let accountManager = AccountManager()
     private(set) lazy var dashboardStore = DashboardStore(accountManager: accountManager)
     let aiSettings = AISettings()
     private(set) lazy var synopsisEngine = SynopsisEngine(aiSettings: aiSettings)
     let mentionTracker = MentionTracker()
+    let pollingScheduler = PollingScheduler()
     private let hotkeyManager = HotkeyManager()
 
     private enum Keys {
@@ -65,7 +67,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         setupGlobalHotkey()
 
         if accountManager.hasAccounts {
-            Task { await dashboardStore.refresh() }
+            Task {
+                await dashboardStore.refresh()
+                pollingScheduler.start { [weak self] in
+                    await self?.dashboardStore.refresh()
+                }
+            }
         }
     }
 
@@ -125,6 +132,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 guard let self else { return }
                 self.dashboardStore.isPinned.toggle()
                 self.windowManager.setPinned(self.dashboardStore.isPinned)
+            },
+            onOpenDiffPanel: { [weak self] pr in
+                self?.openDiffPanel(for: pr)
             }
         )
         .environment(dashboardStore)
@@ -132,6 +142,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         .environment(aiSettings)
         .environment(synopsisEngine)
         .environment(mentionTracker)
+        .environment(pollingScheduler)
 
         windowManager = WindowManager(contentView: contentView)
     }
@@ -212,5 +223,62 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
 
         settingsWindow = window
+    }
+
+    func openDiffPanel(for pr: PullRequest) {
+        // If diff window exists and is for the same PR, just bring it forward
+        if let diffWindow, diffWindow.isVisible {
+            diffWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            // Close and recreate if it's a different PR
+            if diffWindow.title != "PR #\(pr.number) — \(pr.repository.nameWithOwner)" {
+                diffWindow.close()
+            } else {
+                return
+            }
+        }
+
+        let diffView = DiffPanelView(pr: pr)
+            .environment(dashboardStore)
+            .environment(accountManager)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: 800, height: 600),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "PR #\(pr.number) — \(pr.repository.nameWithOwner)"
+        window.minSize = NSSize(width: 600, height: 400)
+        window.contentView = NSHostingView(rootView: diffView)
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = NSColor(red: 0.071, green: 0.071, blue: 0.078, alpha: 1.0)
+
+        // Position flush to the left of the main panel, matching top edge and height
+        if windowManager.isVisible {
+            let mainFrame = windowManager.panelFrame
+            let diffWidth: CGFloat = 800
+            let diffX = mainFrame.minX - diffWidth  // flush left, no gap
+            let diffY = mainFrame.minY              // match bottom (same top since same height)
+            let diffHeight = mainFrame.height        // match main panel height
+
+            // Clamp to screen bounds
+            var finalX = diffX
+            if let screen = NSScreen.main {
+                let screenFrame = screen.visibleFrame
+                finalX = max(finalX, screenFrame.minX)
+            }
+
+            window.setFrame(
+                NSRect(x: finalX, y: diffY, width: diffWidth, height: diffHeight),
+                display: true
+            )
+        } else {
+            window.center()
+        }
+
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+        diffWindow = window
     }
 }

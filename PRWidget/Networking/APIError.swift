@@ -8,6 +8,7 @@ enum APIError: LocalizedError {
     case networkError(Error)
     case rateLimited(resetAt: Date?)
     case unauthorized
+    case notModified
 
     var errorDescription: String? {
         switch self {
@@ -29,6 +30,8 @@ enum APIError: LocalizedError {
             }
         case .unauthorized:
             "Authentication failed. Check your token."
+        case .notModified:
+            "Not modified (304)"
         }
     }
 }

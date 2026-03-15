@@ -50,6 +50,7 @@ final class DashboardStore {
     private let accountManager: AccountManager
     private let client = GitHubGraphQLClient()
     private var refreshTask: Task<Void, Never>?
+    private var fileDiffCache: [String: [PRFileDiff]] = [:]
 
     init(accountManager: AccountManager) {
         self.accountManager = accountManager
@@ -243,6 +244,9 @@ final class DashboardStore {
         state.isLoading = true
         state.error = nil
 
+        // Invalidate file diff cache on refresh — PRs may have new commits
+        fileDiffCache.removeAll()
+
         var allPRs: [PullRequest] = []
         var currentUser = ""
 
@@ -281,7 +285,9 @@ final class DashboardStore {
         state.isLoading = false
     }
 
-    func fetchDetail(for pr: PullRequest) async -> PRDetail? {
+    func fetchDetail(for pr: PullRequest, force: Bool = false) async -> PRDetail? {
+        if !force, let existing = pr.detail { return existing }
+
         guard let account = accountManager.accounts.first,
               let token = accountManager.token(for: account) else { return nil }
 
@@ -302,5 +308,82 @@ final class DashboardStore {
         } catch {
             return nil
         }
+    }
+
+    func fetchFileDiffs(for pr: PullRequest, force: Bool = false) async throws -> [PRFileDiff] {
+        if !force, let cached = fileDiffCache[pr.id] { return cached }
+
+        guard let account = accountManager.accounts.first,
+              let token = accountManager.token(for: account) else {
+            throw APIError.noToken
+        }
+
+        let parts = pr.repository.nameWithOwner.split(separator: "/")
+        guard parts.count == 2 else { return [] }
+        let owner = String(parts[0])
+        let repo = String(parts[1])
+
+        let restFiles = try await client.fetchFileDiffs(
+            owner: owner,
+            repo: repo,
+            number: pr.number,
+            token: token
+        )
+
+        // Get review threads from the already-fetched detail
+        let reviewThreads = pr.detail?.reviewThreads ?? []
+
+        let diffs = restFiles.map { restFile in
+            let status = FileChangeType(rawValue: restFile.status) ?? .modified
+            let threadsForFile = reviewThreads.filter { $0.path == restFile.filename }
+
+            return PRFileDiff(
+                id: restFile.sha.isEmpty ? restFile.filename : restFile.sha,
+                path: restFile.filename,
+                status: status,
+                additions: restFile.additions,
+                deletions: restFile.deletions,
+                patch: restFile.patch,
+                reviewThreads: threadsForFile
+            )
+        }
+
+        fileDiffCache[pr.id] = diffs
+        return diffs
+    }
+
+    func replyToReviewThread(
+        threadId: String,
+        body: String,
+        token: String,
+        endpoint: URL
+    ) async throws -> PRReviewComment {
+        let response: AddReviewThreadReplyResponse = try await client.execute(
+            query: GitHubMutations.addReviewThreadReply,
+            variables: ["threadId": threadId, "body": body],
+            token: token,
+            endpoint: endpoint
+        )
+
+        let node = response.addPullRequestReviewThreadReply.comment
+        let dateFormatter = ISO8601DateFormatter()
+        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
+        let fallbackFormatter = ISO8601DateFormatter()
+        fallbackFormatter.formatOptions = [.withInternetDateTime]
+
+        let date = dateFormatter.date(from: node.createdAt)
+            ?? fallbackFormatter.date(from: node.createdAt)
+            ?? .now
+
+        return PRReviewComment(
+            id: node.id,
+            author: PRUser(
+                login: node.author?.login ?? "ghost",
+                avatarURL: node.author?.avatarUrl.flatMap(URL.init)
+            ),
+            body: node.body,
+            createdAt: date,
+            url: node.url.flatMap(URL.init)
+        )
     }
 }

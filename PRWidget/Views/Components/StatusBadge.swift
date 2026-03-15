@@ -15,6 +15,7 @@ struct StatusBadge: View {
                 .fontDesign(.monospaced)
                 .foregroundStyle(Catalyst.muted)
         }
+        .accessibilityIdentifier(AccessibilityID.statusBadge)
     }
 
     private var statusIcon: String {

@@ -16,6 +16,7 @@ struct SearchBar: View {
                 .font(.system(size: 12, design: .monospaced))
                 .foregroundStyle(Catalyst.foreground)
                 .focused($isFocused)
+                .accessibilityIdentifier(AccessibilityID.searchField)
 
             if !text.isEmpty {
                 Button {
@@ -26,6 +27,7 @@ struct SearchBar: View {
                         .foregroundStyle(Catalyst.subtle)
                 }
                 .buttonStyle(.plain)
+                .accessibilityIdentifier(AccessibilityID.searchClearButton)
             }
         }
         .padding(.horizontal, 12)
@@ -40,5 +42,6 @@ struct SearchBar: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 4)
         .background(Catalyst.card)
+        .accessibilityIdentifier(AccessibilityID.searchBar)
     }
 }

@@ -57,3 +57,17 @@ targets:
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.catalyst.p-arr.tests
+
+  PRWidgetUITests:
+    type: bundle.ui-testing
+    platform: macOS
+    sources:
+      - path: PRWidgetUITests
+    dependencies:
+      - target: PRWidget
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.catalyst.p-arr.uitests
+        INFOPLIST_FILE: PRWidgetUITests/Info.plist
+        TEST_TARGET_NAME: PRWidget
+        SWIFT_STRICT_CONCURRENCY: complete

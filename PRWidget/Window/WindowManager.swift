@@ -69,6 +69,7 @@ final class WindowManager {
     }
 
     var isVisible: Bool { panel.isVisible }
+    var panelFrame: NSRect { panel.frame }
 
     func toggle(relativeTo statusItem: NSStatusItem?) {
         if panel.isVisible {

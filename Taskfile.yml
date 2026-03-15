@@ -90,6 +90,18 @@ tasks:
     cmds:
       - swift test 2>&1
 
+  test:ui:
+    desc: Run XCUITests (generates xcodeproj first)
+    deps: [generate]
+    cmds:
+      - |
+        xcodebuild test \
+          -project PArr.xcodeproj \
+          -scheme PRWidget \
+          -only-testing:PRWidgetUITests \
+          -destination 'platform=macOS' \
+          2>&1 | xcbeautify
+
   clean:
     desc: Clean build artifacts
     cmds:
@@ -120,6 +132,7 @@ tasks:
     desc: Install development dependencies
     cmds:
       - brew install fswatch xcbeautify lefthook git-cliff 2>/dev/null || true
+      - task cask:setup
       - swift package resolve
       - |
         if git rev-parse --git-dir &>/dev/null 2>&1; then
@@ -220,3 +233,87 @@ tasks:
     desc: "Release a major version (breaking changes)"
     cmds:
       - task release -- major
+
+  # ── Packaging & Distribution ──────────────────────────────────
+
+  package:
+    desc: Build release, bundle .app, create versioned .zip
+    cmds:
+      - ./scripts/package.sh
+    sources:
+      - PRWidget/**/*.swift
+      - Package.swift
+      - VERSION
+
+  publish:
+    desc: "Create GitHub release and push updated cask to tap"
+    deps: [package]
+    cmds:
+      - |
+        VER=$(tr -d '[:space:]' < VERSION)
+        ZIP=".build/P-Arr-${VER}.zip"
+
+        if ! command -v gh &>/dev/null; then
+          echo "Error: gh CLI not installed. Run: brew install gh"
+          exit 1
+        fi
+
+        echo "==> Creating GitHub release v${VER}..."
+        gh release create "v${VER}" "$ZIP" \
+          --title "P-Arr v${VER}" \
+          --notes-file CHANGELOG.md
+
+        echo ""
+        echo "==> Release created: v${VER}"
+
+        # Update cask formula
+        task cask:update
+
+        # Commit + push inside the submodule
+        echo "==> Publishing tap update..."
+        cd homebrew-catalyst
+        git add Casks/p-arr.rb
+        git commit -m "Update p-arr to v${VER}"
+        git push origin main
+        cd ..
+
+        # Update submodule ref in parent repo
+        git add homebrew-catalyst
+        git commit -m "chore: update homebrew-catalyst to p-arr v${VER}"
+
+        echo ""
+        echo "✅ Published v${VER}"
+        echo "   GitHub release + Homebrew tap updated"
+
+  cask:update:
+    desc: "Update cask formula with current version and SHA256"
+    cmds:
+      - |
+        VER=$(tr -d '[:space:]' < VERSION)
+        ZIP=".build/P-Arr-${VER}.zip"
+        CASK="homebrew-catalyst/Casks/p-arr.rb"
+
+        if [[ ! -f "$ZIP" ]]; then
+          echo "Error: $ZIP not found. Run 'task package' first."
+          exit 1
+        fi
+
+        if [[ ! -f "$CASK" ]]; then
+          echo "Error: $CASK not found. Run 'task cask:setup' first."
+          exit 1
+        fi
+
+        SHA256=$(shasum -a 256 "$ZIP" | awk '{print $1}')
+
+        sed -i '' "s/version \".*\"/version \"${VER}\"/" "$CASK"
+        sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" "$CASK"
+
+        echo "==> Updated $CASK"
+        echo "    version: ${VER}"
+        echo "    sha256:  ${SHA256}"
+
+  cask:setup:
+    desc: "Initialize/update the homebrew-catalyst submodule"
+    cmds:
+      - git submodule update --init --recursive
+      - echo "✅ homebrew-catalyst submodule ready"

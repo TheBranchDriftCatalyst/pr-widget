@@ -18,6 +18,7 @@ struct FilterBar: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
         }
+        .accessibilityIdentifier(AccessibilityID.filterBar)
         .background(Catalyst.card)
     }
 }
@@ -43,5 +44,6 @@ private struct FilterChip: View {
                 .if(isActive) { $0.neonGlow(Catalyst.cyan, radius: 6) }
         }
         .buttonStyle(.plain)
+        .accessibilityIdentifier(AccessibilityID.filterChip(name: title))
     }
 }

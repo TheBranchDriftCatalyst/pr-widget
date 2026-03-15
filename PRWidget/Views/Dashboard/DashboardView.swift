@@ -7,6 +7,7 @@ struct DashboardView: View {
 
     var onOpenSettings: () -> Void = {}
     var onTogglePin: () -> Void = {}
+    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
 
     var body: some View {
         @Bindable var store = store
@@ -27,8 +28,10 @@ struct DashboardView: View {
 
                 if !accountManager.hasAccounts {
                     noAccountView
+                        .accessibilityIdentifier(AccessibilityID.noAccountView)
                 } else if store.state.isEmpty && !store.state.isLoading {
                     emptyStateView
+                        .accessibilityIdentifier(AccessibilityID.emptyStateView)
                 } else {
                     FilterBar(activeFilter: $store.activeFilter)
                     GlowDivider()
@@ -49,6 +52,7 @@ struct DashboardView: View {
                     prListContent
                 }
             }
+            .accessibilityIdentifier(AccessibilityID.dashboardView)
             .frame(minWidth: 380, maxWidth: 600, minHeight: 300, maxHeight: 900)
             .background(Catalyst.background)
             .navigationDestination(for: PullRequest.self) { pr in
@@ -62,6 +66,7 @@ struct DashboardView: View {
     private var prListContent: some View {
         ScrollView {
             LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+
                 if let error = store.state.error {
                     ErrorBannerView(message: error)
                 }
@@ -69,7 +74,7 @@ struct DashboardView: View {
                 // Pinned section
                 let pinned = store.pinnedPRs
                 if !pinned.isEmpty {
-                    PinnedSection(prs: pinned, store: store)
+                    PinnedSection(prs: pinned, store: store, onOpenDiffPanel: onOpenDiffPanel)
                 }
 
                 // Repo groups
@@ -83,6 +88,7 @@ struct DashboardView: View {
                             prs: group.prs,
                             isCollapsed: store.collapsedRepos.contains(group.repoName),
                             store: store,
+                            onOpenDiffPanel: onOpenDiffPanel,
                             onToggle: {
                                 if store.collapsedRepos.contains(group.repoName) {
                                     store.collapsedRepos.remove(group.repoName)
@@ -112,6 +118,7 @@ struct DashboardView: View {
             }
             .catalystScrollbar()
         }
+        .accessibilityIdentifier(AccessibilityID.prList)
     }
 
     private var noMatchView: some View {
@@ -128,6 +135,7 @@ struct DashboardView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
+        .accessibilityIdentifier(AccessibilityID.noMatchView)
     }
 
     private var noAccountView: some View {
@@ -180,6 +188,7 @@ struct DashboardView: View {
 private struct PinnedSection: View {
     let prs: [PullRequest]
     let store: DashboardStore
+    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
 
     var body: some View {
         Section {
@@ -188,6 +197,9 @@ private struct PinnedSection: View {
                     PRRowContent(pr: pr, store: store)
                 }
                 .buttonStyle(.plain)
+                .simultaneousGesture(TapGesture().onEnded {
+                    onOpenDiffPanel(pr)
+                })
                 if pr.id != prs.last?.id {
                     GlowDivider()
                 }
@@ -227,6 +239,7 @@ private struct RepoGroupSection: View {
     let prs: [PullRequest]
     let isCollapsed: Bool
     let store: DashboardStore
+    var onOpenDiffPanel: (PullRequest) -> Void = { _ in }
     let onToggle: () -> Void
     let onCmdToggle: () -> Void
     var onDrop: (String) -> Void = { _ in }
@@ -239,6 +252,9 @@ private struct RepoGroupSection: View {
                         PRRowContent(pr: pr, store: store)
                     }
                     .buttonStyle(.plain)
+                    .simultaneousGesture(TapGesture().onEnded {
+                        onOpenDiffPanel(pr)
+                    })
                     if pr.id != prs.last?.id {
                         GlowDivider()
                     }
@@ -324,13 +340,13 @@ struct PRRowContent: View {
 
                     VStack(alignment: .leading, spacing: 2) {
                         Text(pr.title)
-                            .font(.subheadline)
+                            .font(.system(size: 14))
                             .fontWeight(.medium)
                             .foregroundStyle(Catalyst.foreground)
                             .lineLimit(2)
 
                         Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .fontDesign(.monospaced)
                             .foregroundStyle(Catalyst.muted)
                     }
@@ -346,7 +362,7 @@ struct PRRowContent: View {
 
                     if pr.mergeable == .conflicting {
                         Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .foregroundStyle(Catalyst.warning)
                     }
 
@@ -358,7 +374,7 @@ struct PRRowContent: View {
                         Text("-\(pr.deletions)")
                             .foregroundStyle(Catalyst.red)
                     }
-                    .font(.caption)
+                    .font(.system(size: 11))
                     .fontDesign(.monospaced)
                 }
 
@@ -373,6 +389,7 @@ struct PRRowContent: View {
             .padding(.horizontal, 12)
             .padding(.vertical, 8)
         }
+        .accessibilityIdentifier(AccessibilityID.prRow(id: pr.id))
         .hoverGlow(accentColor(for: pr))
         .contextMenu {
             Button(store.isPinned(pr.id) ? "Unpin" : "Pin") {

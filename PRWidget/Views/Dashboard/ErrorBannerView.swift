@@ -30,5 +30,6 @@ struct ErrorBannerView: View {
                 .foregroundStyle(Catalyst.red.opacity(0.3)),
             alignment: .bottom
         )
+        .accessibilityIdentifier(AccessibilityID.errorBanner)
     }
 }

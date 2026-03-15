@@ -85,4 +85,17 @@ enum GitHubMutations {
         }
     }
     """
+
+    static let addReviewThreadReply = """
+    mutation AddReviewThreadReply($threadId: ID!, $body: String!) {
+        addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {
+            comment {
+                id
+                author { login avatarUrl }
+                body
+                createdAt
+            }
+        }
+    }
+    """
 }

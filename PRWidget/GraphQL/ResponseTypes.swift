@@ -113,6 +113,8 @@ struct PRDetailNode: Decodable {
     let timelineItems: TimelineItemsConnection
     let commits: DetailCommitsConnection
     let changedFiles: Int
+    let files: FilesConnection?
+    let reviewThreads: ReviewThreadsConnection?
 }
 
 struct PRCommentsConnection: Decodable {
@@ -189,6 +191,46 @@ struct CheckRunNode: Decodable {
     let status: String?
     let conclusion: String?
     let detailsUrl: String?
+}
+
+// MARK: - File & Review Thread Response Types
+
+struct FilesConnection: Decodable {
+    let nodes: [FileNode]
+}
+
+struct FileNode: Decodable {
+    let path: String
+    let additions: Int
+    let deletions: Int
+    let changeType: String
+}
+
+struct ReviewThreadsConnection: Decodable {
+    let nodes: [ReviewThreadNode]
+}
+
+struct ReviewThreadNode: Decodable {
+    let id: String
+    let isResolved: Bool
+    let isOutdated: Bool
+    let path: String
+    let line: Int?
+    let startLine: Int?
+    let diffSide: String?
+    let comments: ReviewThreadCommentsConnection
+}
+
+struct ReviewThreadCommentsConnection: Decodable {
+    let nodes: [ReviewThreadCommentNode]
+}
+
+struct ReviewThreadCommentNode: Decodable {
+    let id: String
+    let author: UserNode?
+    let body: String
+    let createdAt: String
+    let url: String?
 }
 
 // MARK: - Detail Mapping
@@ -285,13 +327,35 @@ extension PRDetailNode {
             )
         } ?? []
 
+        let mappedReviewThreads: [PRReviewThread] = reviewThreads?.nodes.map { node in
+            PRReviewThread(
+                id: node.id,
+                path: node.path,
+                line: node.line,
+                startLine: node.startLine,
+                diffSide: node.diffSide.flatMap { DiffSide(rawValue: $0) } ?? .RIGHT,
+                isResolved: node.isResolved,
+                isOutdated: node.isOutdated,
+                comments: node.comments.nodes.map { comment in
+                    PRReviewComment(
+                        id: comment.id,
+                        author: PRUser(login: comment.author?.login ?? "ghost", avatarURL: comment.author?.avatarUrl.flatMap(URL.init)),
+                        body: comment.body,
+                        createdAt: parseDate(comment.createdAt),
+                        url: comment.url.flatMap(URL.init)
+                    )
+                }
+            )
+        } ?? []
+
         return PRDetail(
             comments: mappedComments,
             timelineEvents: mappedTimeline,
             commits: mappedCommits,
             checkRuns: checkRuns,
             changedFiles: changedFiles,
-            bodyText: bodyText ?? ""
+            bodyText: bodyText ?? "",
+            reviewThreads: mappedReviewThreads
         )
     }
 }
@@ -350,6 +414,16 @@ struct RemoveLabelsResponse: Decodable {
 
 struct RemoveLabelsPayload: Decodable {
     let labelable: LabelableResult
+}
+
+// MARK: - Review Thread Reply Response
+
+struct AddReviewThreadReplyResponse: Decodable {
+    let addPullRequestReviewThreadReply: AddReviewThreadReplyPayload
+}
+
+struct AddReviewThreadReplyPayload: Decodable {
+    let comment: ReviewThreadCommentNode
 }
 
 // MARK: - Mapping to Domain Models

@@ -1,0 +1,3 @@
+[submodule "homebrew-catalyst"]
+	path = homebrew-catalyst
+	url = https://github.com/TheBranchDriftCatalyst/homebrew-catalyst.git

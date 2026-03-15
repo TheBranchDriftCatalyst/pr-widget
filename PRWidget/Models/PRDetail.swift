@@ -7,6 +7,7 @@ struct PRDetail: Sendable {
     let checkRuns: [PRCheckRun]
     let changedFiles: Int
     let bodyText: String
+    let reviewThreads: [PRReviewThread]
 
     var allActivity: [PRActivityItem] {
         var items: [PRActivityItem] = []

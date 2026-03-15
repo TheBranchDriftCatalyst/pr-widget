@@ -2,6 +2,8 @@ import SwiftUI
 import CatalystSwift
 
 struct DashboardHeaderBar: View {
+    @Environment(PollingScheduler.self) private var polling
+
     let lastRefreshed: Date?
     let isLoading: Bool
     let isPinned: Bool
@@ -11,6 +13,12 @@ struct DashboardHeaderBar: View {
     let onRefresh: () -> Void
     let onTogglePin: () -> Void
     let onOpenSettings: () -> Void
+
+    private var intervalLabel: String {
+        let s = Int(polling.interval)
+        if s >= 60 { return "\(s / 60)m" }
+        return "\(s)s"
+    }
 
     var body: some View {
         HStack(spacing: 8) {
@@ -44,10 +52,16 @@ struct DashboardHeaderBar: View {
             Spacer()
 
             if let lastRefreshed {
-                Text(lastRefreshed, style: .relative)
-                    .font(.caption)
-                    .fontDesign(.monospaced)
-                    .foregroundStyle(Catalyst.muted)
+                HStack(spacing: 4) {
+                    Text(lastRefreshed, style: .relative)
+                    if polling.isEnabled {
+                        Text("(\(intervalLabel))")
+                            .foregroundStyle(Catalyst.subtle)
+                    }
+                }
+                .font(.caption)
+                .fontDesign(.monospaced)
+                .foregroundStyle(Catalyst.muted)
             }
 
             Button {
@@ -58,13 +72,22 @@ struct DashboardHeaderBar: View {
                         .controlSize(.small)
                         .tint(Catalyst.cyan)
                 } else {
-                    Image(systemName: "arrow.clockwise")
-                        .foregroundStyle(Catalyst.cyan)
+                    HStack(spacing: 3) {
+                        Image(systemName: "arrow.clockwise")
+                        if polling.isEnabled {
+                            Circle()
+                                .fill(Catalyst.approved)
+                                .frame(width: 5, height: 5)
+                        }
+                    }
+                    .foregroundStyle(Catalyst.cyan)
                 }
             }
             .buttonStyle(.borderless)
             .disabled(isLoading)
+            .accessibilityIdentifier(AccessibilityID.refreshButton)
             .accessibilityLabel("Refresh")
+            .help(polling.isEnabled ? "Auto-refresh every \(intervalLabel)" : "Refresh")
 
             Button {
                 onTogglePin()
@@ -73,16 +96,19 @@ struct DashboardHeaderBar: View {
                     .foregroundStyle(isPinned ? Catalyst.cyan : Catalyst.muted)
             }
             .buttonStyle(.borderless)
+            .accessibilityIdentifier(AccessibilityID.pinButton)
             .help(isPinned ? "Unpin window" : "Pin window on top")
 
             Button("Settings", systemImage: "gearshape", action: onOpenSettings)
                 .labelStyle(.iconOnly)
                 .buttonStyle(.borderless)
                 .foregroundStyle(Catalyst.muted)
+                .accessibilityIdentifier(AccessibilityID.settingsButton)
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .glassCard()
+        .accessibilityIdentifier(AccessibilityID.dashboardHeaderBar)
     }
 
     private func countBadge(_ count: Int, color: Color, icon: String, label: String) -> some View {

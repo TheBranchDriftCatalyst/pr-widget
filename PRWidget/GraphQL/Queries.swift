@@ -201,6 +201,34 @@ enum GitHubQueries {
                         }
                     }
                 }
+                files(first: 100) {
+                    nodes {
+                        path
+                        additions
+                        deletions
+                        changeType
+                    }
+                }
+                reviewThreads(first: 100) {
+                    nodes {
+                        id
+                        isResolved
+                        isOutdated
+                        path
+                        line
+                        startLine
+                        diffSide
+                        comments(first: 50) {
+                            nodes {
+                                id
+                                author { login avatarUrl }
+                                body
+                                createdAt
+                                url
+                            }
+                        }
+                    }
+                }
                 changedFiles
             }
         }
