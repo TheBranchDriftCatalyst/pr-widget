@@ -4,6 +4,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Features
+
+- Icon theming system, build pipeline, and DocC documentation
+
+### Miscellaneous
+
+- Update homebrew-catalyst to p-arr v0.4.0
+
+## [0.4.0] - 2026-03-15
+
 ### Bug Fixes
 
 - Repair MentionTracker — 3 defects (P0-3)
