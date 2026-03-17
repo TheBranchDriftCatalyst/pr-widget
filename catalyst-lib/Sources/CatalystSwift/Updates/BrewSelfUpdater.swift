@@ -88,14 +88,17 @@ public final class BrewSelfUpdater {
     ///
     /// - Warning: This terminates the current application.
     public func performUpdate() {
+        let brewPath = Self.findBrewPath()
+        let bundlePath = Bundle.main.bundlePath
+
         let script = """
         #!/bin/bash
         # Wait for app to quit
         while pgrep -x "\(appName)" > /dev/null; do sleep 0.5; done
         # Upgrade via brew
-        brew upgrade --cask \(caskName)
+        \(brewPath) upgrade --cask \(caskName)
         # Reopen the app
-        open -a "\(appName)"
+        open "\(bundlePath)"
         # Clean up
         rm -f "$0"
         """
