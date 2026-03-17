@@ -8,7 +8,6 @@ enum APIError: LocalizedError {
     case networkError(Error)
     case rateLimited(resetAt: Date?)
     case unauthorized
-    case notModified
 
     var errorDescription: String? {
         switch self {
@@ -30,8 +29,6 @@ enum APIError: LocalizedError {
             }
         case .unauthorized:
             "Authentication failed. Check your token."
-        case .notModified:
-            "Not modified (304)"
         }
     }
 }
@@ -39,5 +36,6 @@ enum APIError: LocalizedError {
 struct GraphQLError: Decodable, Sendable {
     let message: String
     let type: String?
-    let path: [String]?
+    // Note: `path` intentionally omitted — GitHub sends mixed arrays (strings + ints)
+    // which don't decode to [String]. The field is not displayed anywhere.
 }

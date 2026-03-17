@@ -24,28 +24,6 @@ enum GitHubMutations {
     }
     """
 
-    static let convertToDraft = """
-    mutation ConvertToDraft($pullRequestId: ID!) {
-        convertPullRequestToDraft(input: {pullRequestId: $pullRequestId}) {
-            pullRequest {
-                id
-                isDraft
-            }
-        }
-    }
-    """
-
-    static let markReadyForReview = """
-    mutation MarkReady($pullRequestId: ID!) {
-        markPullRequestReadyForReview(input: {pullRequestId: $pullRequestId}) {
-            pullRequest {
-                id
-                isDraft
-            }
-        }
-    }
-    """
-
     static let addLabelsToLabelable = """
     mutation AddLabels($labelableId: ID!, $labelIds: [ID!]!) {
         addLabelsToLabelable(input: {labelableId: $labelableId, labelIds: $labelIds}) {

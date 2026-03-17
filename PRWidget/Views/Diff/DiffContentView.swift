@@ -5,10 +5,7 @@ struct DiffContentView: View {
     let file: PRFileDiff
     var onReply: (String, String) async throws -> Void  // (threadId, body)
 
-    private var hunks: [DiffHunk] {
-        guard let patch = file.patch else { return [] }
-        return DiffParser.parse(patch)
-    }
+    @State private var hunks: [DiffHunk] = []
 
     var body: some View {
         ScrollView {
@@ -33,6 +30,9 @@ struct DiffContentView: View {
                     }
                 }
             }
+        }
+        .task(id: file.patch) {
+            hunks = file.patch.map { DiffParser.parse($0) } ?? []
         }
     }
 

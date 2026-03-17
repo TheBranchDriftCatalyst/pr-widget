@@ -15,7 +15,30 @@ struct ViewerResponse: Decodable {
 
 struct SearchResponse: Decodable {
     let nodes: [PRNode?]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        var nodesContainer = try container.nestedUnkeyedContainer(forKey: .nodes)
+        var decoded: [PRNode?] = []
+        while !nodesContainer.isAtEnd {
+            // Silently skip non-PullRequest union members (e.g., empty objects)
+            if let node = try? nodesContainer.decode(PRNode.self) {
+                decoded.append(node)
+            } else {
+                // Advance past the element we couldn't decode
+                _ = try? nodesContainer.decode(AnyCodableSkip.self)
+            }
+        }
+        self.nodes = decoded
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case nodes
+    }
 }
+
+/// Throwaway type used to advance the decoder past an undecodable element.
+private struct AnyCodableSkip: Decodable {}
 
 struct PRNode: Decodable {
     let id: String
@@ -113,7 +136,6 @@ struct PRDetailNode: Decodable {
     let timelineItems: TimelineItemsConnection
     let commits: DetailCommitsConnection
     let changedFiles: Int
-    let files: FilesConnection?
     let reviewThreads: ReviewThreadsConnection?
 }
 
@@ -193,18 +215,7 @@ struct CheckRunNode: Decodable {
     let detailsUrl: String?
 }
 
-// MARK: - File & Review Thread Response Types
-
-struct FilesConnection: Decodable {
-    let nodes: [FileNode]
-}
-
-struct FileNode: Decodable {
-    let path: String
-    let additions: Int
-    let deletions: Int
-    let changeType: String
-}
+// MARK: - Review Thread Response Types
 
 struct ReviewThreadsConnection: Decodable {
     let nodes: [ReviewThreadNode]
@@ -237,21 +248,12 @@ struct ReviewThreadCommentNode: Decodable {
 
 extension PRDetailNode {
     func toPRDetail() -> PRDetail {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let fallbackFormatter = ISO8601DateFormatter()
-        fallbackFormatter.formatOptions = [.withInternetDateTime]
-
-        func parseDate(_ str: String) -> Date {
-            dateFormatter.date(from: str) ?? fallbackFormatter.date(from: str) ?? .now
-        }
-
         let mappedComments = comments.nodes.map { node in
             PRComment(
                 id: node.id,
                 author: PRUser(login: node.author?.login ?? "ghost", avatarURL: node.author?.avatarUrl.flatMap(URL.init)),
                 body: node.body,
-                createdAt: parseDate(node.createdAt),
+                createdAt: .parseGitHub(node.createdAt),
                 url: node.url.flatMap(URL.init),
                 isMinimized: node.isMinimized
             )
@@ -301,7 +303,7 @@ extension PRDetailNode {
                 id: id,
                 type: type,
                 actor: actor,
-                createdAt: parseDate(createdAtStr),
+                createdAt: .parseGitHub(createdAtStr),
                 description: desc
             )
         }
@@ -341,7 +343,7 @@ extension PRDetailNode {
                         id: comment.id,
                         author: PRUser(login: comment.author?.login ?? "ghost", avatarURL: comment.author?.avatarUrl.flatMap(URL.init)),
                         body: comment.body,
-                        createdAt: parseDate(comment.createdAt),
+                        createdAt: .parseGitHub(comment.createdAt),
                         url: comment.url.flatMap(URL.init)
                     )
                 }
@@ -430,16 +432,6 @@ struct AddReviewThreadReplyPayload: Decodable {
 
 extension PRNode {
     func toPullRequest() -> PullRequest? {
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-
-        let fallbackFormatter = ISO8601DateFormatter()
-        fallbackFormatter.formatOptions = [.withInternetDateTime]
-
-        func parseDate(_ str: String) -> Date {
-            dateFormatter.date(from: str) ?? fallbackFormatter.date(from: str) ?? .now
-        }
-
         guard let prURL = URL(string: url),
               let repoURL = URL(string: repository.url) else {
             return nil
@@ -458,8 +450,8 @@ extension PRNode {
             for node in reviews.nodes {
                 guard let authorLogin = node.author?.login else { continue }
                 if let existing = byAuthor[authorLogin] {
-                    let existingDate = existing.submittedAt.flatMap { parseDate($0) } ?? .distantPast
-                    let nodeDate = node.submittedAt.flatMap { parseDate($0) } ?? .distantPast
+                    let existingDate = existing.submittedAt.flatMap { Date.parseGitHub($0) } ?? .distantPast
+                    let nodeDate = node.submittedAt.flatMap { Date.parseGitHub($0) } ?? .distantPast
                     if nodeDate > existingDate {
                         byAuthor[authorLogin] = node
                     }
@@ -472,7 +464,7 @@ extension PRNode {
                     id: node.id,
                     author: PRUser(login: node.author?.login ?? "", avatarURL: node.author?.avatarUrl.flatMap(URL.init)),
                     state: ReviewState(rawValue: node.state) ?? .pending,
-                    submittedAt: node.submittedAt.flatMap { parseDate($0) }
+                    submittedAt: node.submittedAt.flatMap { Date.parseGitHub($0) }
                 )
             }
         }()
@@ -484,8 +476,8 @@ extension PRNode {
             url: prURL,
             state: PRState(rawValue: state) ?? .open,
             isDraft: isDraft,
-            createdAt: parseDate(createdAt),
-            updatedAt: parseDate(updatedAt),
+            createdAt: .parseGitHub(createdAt),
+            updatedAt: .parseGitHub(updatedAt),
             author: PRUser(login: author?.login ?? "ghost", avatarURL: author?.avatarUrl.flatMap(URL.init)),
             repository: PRRepository(nameWithOwner: repository.nameWithOwner, url: repoURL),
             headRefName: headRefName,

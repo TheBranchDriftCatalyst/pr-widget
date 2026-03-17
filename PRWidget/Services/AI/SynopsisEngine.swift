@@ -4,7 +4,6 @@ import Observation
 @MainActor
 @Observable
 final class SynopsisEngine {
-    private let ollamaClient = OllamaClient()
     private let openAIClient = OpenAIClient()
     private var cache: [String: AISynopsis] = [:]
 
@@ -54,8 +53,9 @@ final class SynopsisEngine {
 
     private func tryOllama(prompt: String) async -> String? {
         do {
-            guard await ollamaClient.isAvailable() else { return nil }
-            return try await ollamaClient.generate(
+            let client = OllamaClient(baseURL: URL(string: aiSettings.ollamaBaseURL) ?? URL(string: "http://localhost:11434")!)
+            guard await client.isAvailable() else { return nil }
+            return try await client.generate(
                 model: aiSettings.selectedOllamaModel,
                 prompt: prompt
             )

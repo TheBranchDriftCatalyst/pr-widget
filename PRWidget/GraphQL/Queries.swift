@@ -201,14 +201,6 @@ enum GitHubQueries {
                         }
                     }
                 }
-                files(first: 100) {
-                    nodes {
-                        path
-                        additions
-                        deletions
-                        changeType
-                    }
-                }
                 reviewThreads(first: 100) {
                     nodes {
                         id

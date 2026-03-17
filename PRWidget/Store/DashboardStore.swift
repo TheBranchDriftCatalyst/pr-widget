@@ -49,7 +49,6 @@ final class DashboardStore {
 
     private let accountManager: AccountManager
     private let client = GitHubGraphQLClient()
-    private var refreshTask: Task<Void, Never>?
     private var fileDiffCache: [String: [PRFileDiff]] = [:]
 
     init(accountManager: AccountManager) {
@@ -375,14 +374,6 @@ final class DashboardStore {
         )
 
         let node = response.addPullRequestReviewThreadReply.comment
-        let dateFormatter = ISO8601DateFormatter()
-        dateFormatter.formatOptions = [.withInternetDateTime, .withFractionalSeconds]
-        let fallbackFormatter = ISO8601DateFormatter()
-        fallbackFormatter.formatOptions = [.withInternetDateTime]
-
-        let date = dateFormatter.date(from: node.createdAt)
-            ?? fallbackFormatter.date(from: node.createdAt)
-            ?? .now
 
         return PRReviewComment(
             id: node.id,
@@ -391,7 +382,7 @@ final class DashboardStore {
                 avatarURL: node.author?.avatarUrl.flatMap(URL.init)
             ),
             body: node.body,
-            createdAt: date,
+            createdAt: .parseGitHub(node.createdAt),
             url: node.url.flatMap(URL.init)
         )
     }

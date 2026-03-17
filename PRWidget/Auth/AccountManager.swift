@@ -11,8 +11,6 @@ final class AccountManager {
 
     var hasAccounts: Bool { !accounts.isEmpty }
 
-    var currentUserLogin: String? { accounts.first?.username }
-
     init() {
         self.accounts = Self.accountsKey.load()
     }

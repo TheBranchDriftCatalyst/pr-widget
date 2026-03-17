@@ -6,5 +6,5 @@ struct PRLabel: Identifiable, Hashable, Codable, Sendable {
     let color: String
     let description: String?
 
-    var id: String { name }
+    var id: String { nodeId }
 }

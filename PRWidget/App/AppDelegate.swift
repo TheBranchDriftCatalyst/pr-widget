@@ -147,7 +147,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             height: badgeSize
         ))
         badge.wantsLayer = true
-        badge.layer?.backgroundColor = NSColor(red: 1.0, green: 0.161, blue: 0.459, alpha: 1.0).cgColor
+        badge.layer?.backgroundColor = Catalyst.nsRed.cgColor
         badge.layer?.cornerRadius = badgeSize / 2
 
         let label = NSTextField(labelWithString: count > 9 ? "9+" : "\(count)")

@@ -1,5 +1,31 @@
+import AppKit
 import SwiftUI
 import CatalystSwift
+
+// MARK: - Avatar Image Cache
+
+private actor AvatarImageCache {
+    static let shared = AvatarImageCache()
+    private let cache = NSCache<NSURL, NSImage>()
+
+    init() {
+        cache.countLimit = 200
+    }
+
+    func image(for url: URL) async -> NSImage? {
+        if let cached = cache.object(forKey: url as NSURL) {
+            return cached
+        }
+        do {
+            let (data, _) = try await URLSession.shared.data(from: url)
+            guard let nsImage = NSImage(data: data) else { return nil }
+            cache.setObject(nsImage, forKey: url as NSURL)
+            return nsImage
+        } catch {
+            return nil
+        }
+    }
+}
 
 struct ReviewAvatars: View {
     let reviews: [PRReview]
@@ -48,7 +74,7 @@ private struct ReviewAvatarBadge: View {
 
             if differentiateWithoutColor {
                 Image(systemName: stateIcon)
-                    .font(.system(size: 7, weight: .bold))
+                    .scaledFont(size: 7, weight: .bold)
                     .foregroundStyle(Catalyst.foreground)
                     .frame(width: 12, height: 12)
                     .background(reviewColor, in: Circle())
@@ -90,7 +116,7 @@ private struct PendingAvatarBadge: View {
 
             if differentiateWithoutColor {
                 Image(systemName: "clock")
-                    .font(.system(size: 7, weight: .bold))
+                    .scaledFont(size: 7, weight: .bold)
                     .foregroundStyle(Catalyst.foreground)
                     .frame(width: 12, height: 12)
                     .background(Catalyst.subtle, in: Circle())
@@ -114,15 +140,13 @@ private struct PendingAvatarBadge: View {
 private struct AvatarImage: View {
     let login: String
     let url: URL?
+    @State private var nsImage: NSImage?
 
     var body: some View {
         Group {
-            if let url {
-                AsyncImage(url: url) { image in
-                    image.resizable()
-                } placeholder: {
-                    InitialsAvatar(login: login)
-                }
+            if let nsImage {
+                Image(nsImage: nsImage)
+                    .resizable()
             } else {
                 InitialsAvatar(login: login)
             }
@@ -130,6 +154,10 @@ private struct AvatarImage: View {
         .frame(width: 28, height: 28)
         .clipShape(Circle())
         .overlay(Circle().stroke(Catalyst.card, lineWidth: 2))
+        .task(id: url) {
+            guard let url else { return }
+            nsImage = await AvatarImageCache.shared.image(for: url)
+        }
     }
 }
 
@@ -140,9 +168,7 @@ private struct InitialsAvatar: View {
         ZStack {
             Circle().fill(Catalyst.surface)
             Text(String(login.prefix(1)).uppercased())
-                .font(.caption2)
-                .fontWeight(.medium)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 9, weight: .medium, design: .monospaced)
                 .foregroundStyle(Catalyst.cyan)
         }
     }
