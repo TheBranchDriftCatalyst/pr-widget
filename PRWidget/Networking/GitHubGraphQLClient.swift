@@ -81,8 +81,7 @@ actor GitHubGraphQLClient {
     }
 
     /// Perform a URLRequest with retry logic for transient errors.
-    /// Returns (Data, HTTPURLResponse) on success for a 200/304 status code,
-    /// or throws after exhausting retries.
+    /// Returns (Data, HTTPURLResponse) on success, or throws after exhausting retries.
     private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
         var lastError: Error?
         var lastHTTPResponse: HTTPURLResponse?
