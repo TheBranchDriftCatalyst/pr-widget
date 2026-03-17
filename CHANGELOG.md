@@ -4,6 +4,12 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.0
+
+## [0.6.0] - 2026-03-17
+
 ### Bug Fixes
 
 - Resolve 5 concurrency issues for Swift 6 strict concurrency
