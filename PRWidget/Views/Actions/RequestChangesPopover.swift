@@ -7,12 +7,7 @@ struct RequestChangesPopover: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            Text("REQUEST CHANGES")
-                .font(.caption)
-                .fontWeight(.bold)
-                .fontDesign(.monospaced)
-                .tracking(1)
-                .foregroundStyle(Catalyst.warning)
+            SectionHeader(title: "REQUEST CHANGES", accentColor: Catalyst.warning)
             TextField("Describe requested changes...", text: $comment, axis: .vertical)
                 .lineLimit(3...6)
                 .frame(width: 250)

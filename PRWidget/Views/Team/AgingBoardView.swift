@@ -13,10 +13,7 @@ struct AgingBoardView: View {
 
             ForEach(pullRequests) { pr in
                 HStack {
-                    Circle()
-                        .fill(ageColor(pr.age))
-                        .frame(width: 10, height: 10)
-                        .shadow(color: ageColor(pr.age).opacity(0.5), radius: 3, x: 0, y: 0)
+                    NeonDot(color: ageColor(pr.age), size: 10)
                     Text(pr.title)
                         .font(.caption)
                         .foregroundStyle(Catalyst.foreground)

@@ -33,23 +33,7 @@ struct DashboardView: View {
                     emptyStateView
                         .accessibilityIdentifier(AccessibilityID.emptyStateView)
                 } else {
-                    FilterBar(activeFilter: $store.activeFilter)
-                    GlowDivider()
-                    SearchBar(text: $store.searchQuery, isFocused: $isSearchFocused)
-                    GlowDivider()
-                    LabelFilterView(
-                        availableLabels: store.availableLabels,
-                        selectedLabels: $store.selectedLabels,
-                        excludedLabels: $store.excludedLabels
-                    )
-                    GlowDivider()
-                    AuthorFilterView(
-                        availableAuthors: store.availableAuthors,
-                        selectedAuthors: $store.selectedAuthors,
-                        excludedAuthors: $store.excludedAuthors
-                    )
-                    GlowDivider()
-                    prListContent
+                    DashboardMainContent(isSearchFocused: $isSearchFocused)
                 }
             }
             .accessibilityIdentifier(AccessibilityID.dashboardView)
@@ -82,69 +66,6 @@ struct DashboardView: View {
             .frame(width: 0, height: 0)
             .opacity(0)
         }
-    }
-
-    private var prListContent: some View {
-        ScrollView {
-            LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
-
-                if let error = store.state.error {
-                    ErrorBannerView(message: error)
-                }
-
-                // Pinned section
-                let pinned = store.pinnedPRs
-                if !pinned.isEmpty {
-                    PinnedSection(prs: pinned, store: store)
-                }
-
-                // Repo groups
-                let groups = store.groupedByRepo
-                if groups.isEmpty && pinned.isEmpty && !store.state.isLoading {
-                    noMatchView
-                } else {
-                    ForEach(Array(groups.enumerated()), id: \.element.repoName) { index, group in
-                        RepoGroupSection(
-                            repoName: group.repoName,
-                            prs: group.prs,
-                            isCollapsed: store.collapsedRepos.contains(group.repoName),
-                            store: store,
-                            onToggle: {
-                                if store.collapsedRepos.contains(group.repoName) {
-                                    store.collapsedRepos.remove(group.repoName)
-                                } else {
-                                    store.collapsedRepos.insert(group.repoName)
-                                }
-                            },
-                            onCmdToggle: {
-                                if store.allCollapsed {
-                                    store.expandAll()
-                                } else {
-                                    store.collapseAll()
-                                }
-                            },
-                            onDrop: { fromRepo in
-                                guard fromRepo != group.repoName else { return }
-                                var order = groups.map(\.repoName)
-                                guard let fromIdx = order.firstIndex(of: fromRepo) else { return }
-                                order.remove(at: fromIdx)
-                                let toIdx = min(index, order.count)
-                                order.insert(fromRepo, at: toIdx)
-                                store.repoOrder = order
-                            }
-                        )
-                    }
-                }
-            }
-            .catalystScrollbar()
-        }
-        .accessibilityIdentifier(AccessibilityID.prList)
-    }
-
-    private var noMatchView: some View {
-        EmptyState(icon: "magnifyingglass", title: "NO MATCHES")
-            .padding()
-            .accessibilityIdentifier(AccessibilityID.noMatchView)
     }
 
     private var noAccountView: some View {
@@ -183,17 +104,118 @@ struct DashboardView: View {
     }
 }
 
+// MARK: - Dashboard Main Content (extracted from DashboardView.body)
+
+private struct DashboardMainContent: View {
+    @Environment(DashboardStore.self) var store
+    var isSearchFocused: FocusState<Bool>.Binding
+
+    var body: some View {
+        @Bindable var store = store
+        FilterBar(activeFilter: $store.activeFilter)
+        GlowDivider()
+        SearchBar(text: $store.searchQuery, isFocused: isSearchFocused)
+        GlowDivider()
+        LabelFilterView(
+            availableLabels: store.availableLabels,
+            selectedLabels: $store.selectedLabels,
+            excludedLabels: $store.excludedLabels
+        )
+        GlowDivider()
+        AuthorFilterView(
+            availableAuthors: store.availableAuthors,
+            selectedAuthors: $store.selectedAuthors,
+            excludedAuthors: $store.excludedAuthors
+        )
+        GlowDivider()
+        prListContent
+    }
+
+    private var prListContent: some View {
+        ScrollView {
+            LazyVStack(spacing: 0, pinnedViews: .sectionHeaders) {
+
+                if let error = store.state.error {
+                    ErrorBannerView(message: error)
+                }
+
+                // Pinned section
+                let pinned = store.pinnedPRs
+                if !pinned.isEmpty {
+                    PinnedSection(
+                        prs: pinned,
+                        pinnedIDs: store.pinnedPRIDs,
+                        onTogglePin: { store.togglePin($0) }
+                    )
+                }
+
+                // Repo groups
+                let groups = store.groupedByRepo
+                if groups.isEmpty && pinned.isEmpty && !store.state.isLoading {
+                    noMatchView
+                } else {
+                    ForEach(Array(groups.enumerated()), id: \.element.repoName) { index, group in
+                        RepoGroupSection(
+                            repoName: group.repoName,
+                            prs: group.prs,
+                            isCollapsed: store.collapsedRepos.contains(group.repoName),
+                            pinnedIDs: store.pinnedPRIDs,
+                            onTogglePin: { store.togglePin($0) },
+                            onToggle: {
+                                if store.collapsedRepos.contains(group.repoName) {
+                                    store.collapsedRepos.remove(group.repoName)
+                                } else {
+                                    store.collapsedRepos.insert(group.repoName)
+                                }
+                            },
+                            onCmdToggle: {
+                                if store.allCollapsed {
+                                    store.expandAll()
+                                } else {
+                                    store.collapseAll()
+                                }
+                            },
+                            onDrop: { fromRepo in
+                                guard fromRepo != group.repoName else { return }
+                                var order = groups.map(\.repoName)
+                                guard let fromIdx = order.firstIndex(of: fromRepo) else { return }
+                                order.remove(at: fromIdx)
+                                let toIdx = min(index, order.count)
+                                order.insert(fromRepo, at: toIdx)
+                                store.repoOrder = order
+                            }
+                        )
+                    }
+                }
+            }
+            .catalystScrollbar()
+        }
+        .accessibilityIdentifier(AccessibilityID.prList)
+    }
+
+    private var noMatchView: some View {
+        EmptyState(icon: "magnifyingglass", title: "NO MATCHES")
+            .padding()
+            .accessibilityIdentifier(AccessibilityID.noMatchView)
+    }
+}
+
 // MARK: - Pinned Section
 
 private struct PinnedSection: View {
     let prs: [PullRequest]
-    let store: DashboardStore
+    let pinnedIDs: Set<String>
+    let onTogglePin: (String) -> Void
 
     var body: some View {
         Section {
             ForEach(prs) { pr in
                 NavigationLink(value: pr) {
-                    PRRowContent(pr: pr, store: store)
+                    PRRowContent(
+                        pr: pr,
+                        isPinned: pinnedIDs.contains(pr.id),
+                        onTogglePin: { onTogglePin(pr.id) }
+                    )
                 }
                 .buttonStyle(.plain)
                 if pr.id != prs.last?.id {
@@ -207,17 +229,9 @@ private struct PinnedSection: View {
                     .foregroundStyle(Catalyst.yellow)
                     .shadow(color: Catalyst.yellow.opacity(0.5), radius: 3)
 
-                Text("PINNED")
-                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.foreground)
+                SectionHeader(title: "PINNED", accentColor: Catalyst.foreground)
 
-                Text("\(prs.count)")
-                    .scaledFont(size: 10, weight: .medium, design: .monospaced)
-                    .foregroundStyle(Catalyst.yellow)
-                    .padding(.horizontal, 5)
-                    .padding(.vertical, 1)
-                    .background(Catalyst.yellow.opacity(0.15), in: Capsule())
+                CountBadge(count: prs.count, color: Catalyst.yellow)
 
                 Spacer()
             }
@@ -234,7 +248,8 @@ private struct RepoGroupSection: View {
     let repoName: String
     let prs: [PullRequest]
     let isCollapsed: Bool
-    let store: DashboardStore
+    let pinnedIDs: Set<String>
+    let onTogglePin: (String) -> Void
     let onToggle: () -> Void
     let onCmdToggle: () -> Void
     var onDrop: (String) -> Void = { _ in }
@@ -244,7 +259,11 @@ private struct RepoGroupSection: View {
             if !isCollapsed {
                 ForEach(prs) { pr in
                     NavigationLink(value: pr) {
-                        PRRowContent(pr: pr, store: store)
+                        PRRowContent(
+                            pr: pr,
+                            isPinned: pinnedIDs.contains(pr.id),
+                            onTogglePin: { onTogglePin(pr.id) }
+                        )
                     }
                     .buttonStyle(.plain)
                     if pr.id != prs.last?.id {
@@ -265,10 +284,7 @@ private struct RepoGroupSection: View {
                 .frame(width: 12)
                 .animation(.easeInOut(duration: 0.2), value: isCollapsed)
 
-            Circle()
-                .fill(Catalyst.cyan)
-                .frame(width: 6, height: 6)
-                .shadow(color: Catalyst.cyan.opacity(0.5), radius: 3)
+            NeonDot(color: Catalyst.cyan)
 
             Text(repoName.uppercased())
                 .scaledFont(size: 10, weight: .bold, design: .monospaced)
@@ -276,12 +292,7 @@ private struct RepoGroupSection: View {
                 .foregroundStyle(Catalyst.foreground)
                 .lineLimit(1)
 
-            Text("\(prs.count)")
-                .scaledFont(size: 10, weight: .medium, design: .monospaced)
-                .foregroundStyle(Catalyst.cyan)
-                .padding(.horizontal, 5)
-                .padding(.vertical, 1)
-                .background(Catalyst.cyan.opacity(0.15), in: Capsule())
+            CountBadge(count: prs.count, color: Catalyst.cyan)
 
             Spacer()
         }
@@ -309,8 +320,10 @@ private struct RepoGroupSection: View {
 
 struct PRRowContent: View {
     let pr: PullRequest
-    let store: DashboardStore
+    let isPinned: Bool
+    let onTogglePin: () -> Void
     @Environment(AccountManager.self) private var accountManager
+    @Environment(DashboardStore.self) private var store
 
     var body: some View {
         HStack(spacing: 0) {
@@ -324,7 +337,7 @@ struct PRRowContent: View {
                             .foregroundStyle(Catalyst.subtle)
                     }
 
-                    if store.isPinned(pr.id) {
+                    if isPinned {
                         Image(systemName: "pin.fill")
                             .scaledFont(size: 9)
                             .foregroundStyle(Catalyst.yellow)
@@ -381,8 +394,8 @@ struct PRRowContent: View {
         .accessibilityIdentifier(AccessibilityID.prRow(id: pr.id))
         .hoverGlow(accentColor(for: pr))
         .contextMenu {
-            Button(store.isPinned(pr.id) ? "Unpin" : "Pin") {
-                store.togglePin(pr.id)
+            Button(isPinned ? "Unpin" : "Pin") {
+                onTogglePin()
             }
             Divider()
             Button("Open in Browser") {
