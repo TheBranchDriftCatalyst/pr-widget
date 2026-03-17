@@ -22,9 +22,7 @@ struct MergeOptionsView: View {
     private var methodSelectionView: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("MERGE METHOD")
-                .font(.caption)
-                .fontWeight(.bold)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.magenta)
                 .padding(.bottom, 4)
@@ -38,8 +36,7 @@ struct MergeOptionsView: View {
                             .foregroundStyle(Catalyst.cyan)
                             .frame(width: 16)
                         Text(method.displayName)
-                            .font(.caption)
-                            .fontDesign(.monospaced)
+                            .scaledFont(size: 11, design: .monospaced)
                             .foregroundStyle(Catalyst.foreground)
                         Spacer()
                     }
@@ -67,9 +64,7 @@ struct MergeOptionsView: View {
     private func confirmationView(method: MergeMethod) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("CONFIRM MERGE")
-                .font(.caption)
-                .fontWeight(.bold)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.red)
 
@@ -88,7 +83,7 @@ struct MergeOptionsView: View {
                         .foregroundStyle(Catalyst.magenta)
                         .padding(.horizontal, 4)
                         .padding(.vertical, 1)
-                        .background(Catalyst.magenta.opacity(0.1), in: .rect(cornerRadius: 3))
+                        .background(Catalyst.magenta.opacity(0.1), in: .rect(cornerRadius: Catalyst.radiusSM))
                 }
 
                 Text(prTitle)

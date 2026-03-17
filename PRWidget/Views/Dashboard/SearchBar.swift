@@ -8,7 +8,7 @@ struct SearchBar: View {
     var body: some View {
         HStack(spacing: 6) {
             Image(systemName: "magnifyingglass")
-                .font(.caption)
+                .scaledFont(size: 11)
                 .foregroundStyle(isFocused.wrappedValue ? Catalyst.cyan : Catalyst.subtle)
 
             TextField("Search PRs...", text: $text)
@@ -23,7 +23,7 @@ struct SearchBar: View {
                     text = ""
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .font(.caption)
+                        .scaledFont(size: 11)
                         .foregroundStyle(Catalyst.subtle)
                 }
                 .buttonStyle(.plain)

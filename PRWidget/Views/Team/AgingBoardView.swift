@@ -18,13 +18,12 @@ struct AgingBoardView: View {
                         .frame(width: 10, height: 10)
                         .shadow(color: ageColor(pr.age).opacity(0.5), radius: 3, x: 0, y: 0)
                     Text(pr.title)
-                        .font(.caption)
+                        .scaledFont(size: 11)
                         .foregroundStyle(Catalyst.foreground)
                         .lineLimit(1)
                     Spacer()
                     Text(pr.ageText)
-                        .font(.caption)
-                        .fontDesign(.monospaced)
+                        .scaledFont(size: 11, design: .monospaced)
                         .foregroundStyle(Catalyst.muted)
                 }
             }

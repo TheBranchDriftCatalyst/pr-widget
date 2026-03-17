@@ -144,6 +144,6 @@ struct AISettingsView: View {
             .foregroundStyle(enabled ? Catalyst.cyan : Catalyst.subtle)
             .padding(.horizontal, 6)
             .padding(.vertical, 3)
-            .background(enabled ? Catalyst.cyan.opacity(0.15) : Catalyst.surface, in: .rect(cornerRadius: 3))
+            .background(enabled ? Catalyst.cyan.opacity(0.15) : Catalyst.surface, in: .rect(cornerRadius: Catalyst.radiusSM))
     }
 }

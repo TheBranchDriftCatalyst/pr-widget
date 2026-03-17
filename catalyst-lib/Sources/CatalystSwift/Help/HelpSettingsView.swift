@@ -36,7 +36,7 @@ public struct HelpSettingsView: View {
     private func helpSection(category: String, tips: [HelpTip]) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text(category.uppercased())
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.cyan)
 
@@ -45,24 +45,24 @@ public struct HelpSettingsView: View {
                     helpRow(tip: tip)
                 }
             }
-            .clipShape(.rect(cornerRadius: 6))
+            .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
         }
     }
 
     private func helpRow(tip: HelpTip) -> some View {
         HStack(spacing: 10) {
             Image(systemName: tip.icon)
-                .font(.system(size: 12))
+                .scaledFont(size: 12)
                 .foregroundStyle(Catalyst.cyan)
                 .frame(width: 20, alignment: .center)
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(tip.title)
-                    .font(.system(size: 11, weight: .semibold))
+                    .scaledFont(size: 11, weight: .semibold)
                     .foregroundStyle(Catalyst.foreground)
 
                 Text(tip.description)
-                    .font(.system(size: 10))
+                    .scaledFont(size: 10)
                     .foregroundStyle(Catalyst.muted)
                     .lineLimit(3)
             }
@@ -71,7 +71,7 @@ public struct HelpSettingsView: View {
 
             if let shortcut = tip.shortcut {
                 Text(shortcut)
-                    .font(.system(size: 9, weight: .medium, design: .monospaced))
+                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
                     .foregroundStyle(Catalyst.yellow)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)

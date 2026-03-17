@@ -17,8 +17,7 @@ struct AccountsSettingsView: View {
                                 .fontWeight(.medium)
                                 .foregroundStyle(Catalyst.foreground)
                             Text(account.host)
-                                .font(.caption)
-                                .fontDesign(.monospaced)
+                                .scaledFont(size: 11, design: .monospaced)
                                 .foregroundStyle(Catalyst.muted)
                         }
                         Spacer()

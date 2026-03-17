@@ -60,8 +60,7 @@ struct DashboardHeaderBar: View {
                             .foregroundStyle(Catalyst.subtle)
                     }
                 }
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(Catalyst.muted)
             }
 

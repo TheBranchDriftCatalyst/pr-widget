@@ -34,8 +34,8 @@ struct PromptSettingsView: View {
                         .frame(minHeight: 160)
                         .padding(6)
                         .background(Catalyst.surface.opacity(0.5))
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Catalyst.subtle.opacity(0.3)))
+                        .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
+                        .overlay(RoundedRectangle(cornerRadius: Catalyst.radiusMD).stroke(Catalyst.subtle.opacity(0.3)))
                 }
                 .padding(10)
                 .glassCard()
@@ -53,8 +53,8 @@ struct PromptSettingsView: View {
                         .frame(minHeight: 80)
                         .padding(6)
                         .background(Catalyst.surface.opacity(0.5))
-                        .clipShape(.rect(cornerRadius: 6))
-                        .overlay(RoundedRectangle(cornerRadius: 6).stroke(Catalyst.subtle.opacity(0.3)))
+                        .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
+                        .overlay(RoundedRectangle(cornerRadius: Catalyst.radiusMD).stroke(Catalyst.subtle.opacity(0.3)))
                 }
                 .padding(10)
                 .glassCard()

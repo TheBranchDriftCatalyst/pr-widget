@@ -1,4 +1,5 @@
 import AppKit
+import CatalystSwift
 
 final class FloatingPanel: NSPanel {
     var onResignKey: (() -> Void)?
@@ -23,7 +24,7 @@ final class FloatingPanel: NSPanel {
         hasShadow = true
         animationBehavior = .utilityWindow
 
-        backgroundColor = NSColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1) // #0a0a0f
+        backgroundColor = Catalyst.nsBackground
         isOpaque = false
     }
 

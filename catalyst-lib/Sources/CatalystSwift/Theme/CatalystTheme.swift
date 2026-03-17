@@ -1,3 +1,4 @@
+import AppKit
 import SwiftUI
 
 /// The Catalyst cybersynthpunk dark theme — a centralized design token system.
@@ -240,6 +241,20 @@ public enum Catalyst {
 
     /// Magenta glow shadow at 35% opacity. For secondary accent glows.
     public static let glowMagenta = Color(red: 0.753, green: 0.149, blue: 0.827).opacity(0.35)
+
+    // MARK: - AppKit Bridging (NSColor)
+
+    /// ``background`` as an `NSColor` for AppKit layers and windows.
+    public static let nsBackground = NSColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1)
+
+    /// ``border`` as an `NSColor` for AppKit layers and windows.
+    public static let nsBorder = NSColor(red: 0.153, green: 0.153, blue: 0.165, alpha: 1)
+
+    /// ``cyan`` as an `NSColor` for AppKit layers and windows.
+    public static let nsCyan = NSColor(red: 0.0, green: 0.988, blue: 0.839, alpha: 1)
+
+    /// ``red`` as an `NSColor` for AppKit layers and windows.
+    public static let nsRed = NSColor(red: 1.0, green: 0.161, blue: 0.459, alpha: 1)
 
     // MARK: - Gradient Helpers
 

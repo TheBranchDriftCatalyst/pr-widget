@@ -8,16 +8,13 @@ struct RequestChangesPopover: View {
     var body: some View {
         VStack(spacing: 8) {
             Text("REQUEST CHANGES")
-                .font(.caption)
-                .fontWeight(.bold)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.warning)
             TextField("Describe requested changes...", text: $comment, axis: .vertical)
                 .lineLimit(3...6)
                 .frame(width: 250)
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, design: .monospaced)
             HStack {
                 Spacer()
                 Button("Submit", action: onSubmit)

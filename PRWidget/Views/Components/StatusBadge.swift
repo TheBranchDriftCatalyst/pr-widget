@@ -9,11 +9,10 @@ struct StatusBadge: View {
         HStack(spacing: 3) {
             Image(systemName: statusIcon)
                 .foregroundStyle(statusColor)
-                .font(.caption)
+                .scaledFont(size: 11)
                 .shadow(color: statusColor.opacity(0.5), radius: 3)
             Text(statusText)
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(differentiateWithoutColor ? Catalyst.foreground : Catalyst.muted)
         }
         .accessibilityIdentifier(AccessibilityID.statusBadge)

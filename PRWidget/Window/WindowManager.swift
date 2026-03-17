@@ -31,13 +31,13 @@ final class WindowManager {
         hostingView.layer?.cornerRadius = Catalyst.radiusMD
         hostingView.layer?.masksToBounds = true
         hostingView.layer?.borderWidth = 1
-        hostingView.layer?.borderColor = NSColor(red: 0.153, green: 0.153, blue: 0.165, alpha: 0.6).cgColor
+        hostingView.layer?.borderColor = Catalyst.nsBorder.withAlphaComponent(0.6).cgColor
 
         panel.contentView = hostingView
 
         // Neon glow shadow — dual-layer cyan + magenta
         panel.hasShadow = true
-        hostingView.layer?.shadowColor = NSColor(red: 0.0, green: 0.988, blue: 0.839, alpha: 0.3).cgColor
+        hostingView.layer?.shadowColor = Catalyst.nsCyan.withAlphaComponent(0.3).cgColor
         hostingView.layer?.shadowRadius = 30
         hostingView.layer?.shadowOffset = CGSize(width: 0, height: -2)
         hostingView.layer?.shadowOpacity = 1

@@ -31,7 +31,7 @@ struct PRRowView: View {
                     HStack(alignment: .top, spacing: 6) {
                         if pr.isDraft {
                             Image(systemName: "doc")
-                                .font(.caption)
+                                .scaledFont(size: 11)
                                 .foregroundStyle(Catalyst.subtle)
                                 .accessibilityLabel("Draft")
                         }

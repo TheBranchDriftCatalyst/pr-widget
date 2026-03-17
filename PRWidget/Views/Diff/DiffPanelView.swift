@@ -92,7 +92,7 @@ struct DiffPanelView: View {
         VStack(spacing: 8) {
             Spacer()
             Image(systemName: "exclamationmark.triangle")
-                .font(.title3)
+                .scaledFont(size: 18)
                 .foregroundStyle(Catalyst.warning)
             Text(message)
                 .scaledFont(size: 12)

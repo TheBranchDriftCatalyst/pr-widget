@@ -16,7 +16,7 @@ public struct HelpBadgeModifier: ViewModifier {
             content
                 .overlay(alignment: .topTrailing) {
                     Image(systemName: "questionmark.circle.fill")
-                        .font(.system(size: 8))
+                        .scaledFont(size: 8)
                         .foregroundStyle(Catalyst.subtle)
                         .offset(x: 4, y: -4)
                 }

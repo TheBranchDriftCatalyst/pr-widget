@@ -6,9 +6,7 @@ struct LabelPill: View {
 
     var body: some View {
         Text(label.name)
-            .font(.caption2)
-            .fontWeight(.medium)
-            .fontDesign(.monospaced)
+            .scaledFont(size: 9, weight: .medium, design: .monospaced)
             .foregroundStyle(textColor)
             .padding(.horizontal, 6)
             .padding(.vertical, 2)

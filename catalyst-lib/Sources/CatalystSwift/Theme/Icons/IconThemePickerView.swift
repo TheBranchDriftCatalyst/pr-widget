@@ -12,7 +12,7 @@ public struct IconThemePickerView: View {
     public var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("ICON THEME")
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(1)
                 .foregroundStyle(Catalyst.muted)
 
@@ -54,7 +54,7 @@ private struct VariantCard: View {
                             .fill(Catalyst.surface)
                             .overlay(
                                 Text(variant.rawValue.uppercased())
-                                    .font(.system(size: 20, weight: .bold, design: .monospaced))
+                                    .scaledFont(size: 20, weight: .bold, design: .monospaced)
                                     .foregroundStyle(Catalyst.subtle)
                             )
                     }
@@ -63,7 +63,7 @@ private struct VariantCard: View {
                 .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
 
                 Text(variant.displayName)
-                    .font(.system(size: 10, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
                     .foregroundStyle(isSelected ? Catalyst.cyan : Catalyst.muted)
             }
             .padding(10)

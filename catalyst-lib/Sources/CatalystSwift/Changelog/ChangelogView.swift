@@ -54,15 +54,15 @@ public struct ChangelogView: View {
     private var emptyState: some View {
         VStack(spacing: 12) {
             Image(systemName: "doc.text")
-                .font(.system(size: 28))
+                .scaledFont(size: 28)
                 .foregroundStyle(Catalyst.subtle)
 
             Text("No Changelog Available")
-                .font(.system(size: 13, weight: .semibold))
+                .scaledFont(size: 13, weight: .semibold)
                 .foregroundStyle(Catalyst.muted)
 
             Text("A changelog will appear here when releases are published.")
-                .font(.system(size: 11))
+                .scaledFont(size: 11)
                 .foregroundStyle(Catalyst.subtle)
                 .multilineTextAlignment(.center)
         }
@@ -86,17 +86,17 @@ public struct ChangelogView: View {
             } label: {
                 HStack(spacing: 8) {
                     Image(systemName: isExpanded ? "chevron.down" : "chevron.right")
-                        .font(.system(size: 9, weight: .bold))
+                        .scaledFont(size: 9, weight: .bold)
                         .foregroundStyle(Catalyst.cyan)
                         .frame(width: 12)
 
                     Text(release.version)
-                        .font(.system(size: 12, weight: .bold, design: .monospaced))
+                        .scaledFont(size: 12, weight: .bold, design: .monospaced)
                         .foregroundStyle(Catalyst.foreground)
 
                     if let date = release.date {
                         Text(date)
-                            .font(.system(size: 10, design: .monospaced))
+                            .scaledFont(size: 10, design: .monospaced)
                             .foregroundStyle(Catalyst.subtle)
                     }
 
@@ -104,7 +104,7 @@ public struct ChangelogView: View {
 
                     let entryCount = release.sections.reduce(0) { $0 + $1.entries.count }
                     Text("\(entryCount) changes")
-                        .font(.system(size: 9, weight: .medium, design: .monospaced))
+                        .scaledFont(size: 9, weight: .medium, design: .monospaced)
                         .foregroundStyle(Catalyst.muted)
                 }
                 .padding(.horizontal, 12)
@@ -131,7 +131,7 @@ public struct ChangelogView: View {
     private func sectionView(_ section: ChangelogSection) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Text(section.title)
-                .font(.system(size: 10, weight: .bold, design: .monospaced))
+                .scaledFont(size: 10, weight: .bold, design: .monospaced)
                 .tracking(0.5)
                 .foregroundStyle(sectionColor(section.title))
 
@@ -157,7 +157,7 @@ public struct ChangelogView: View {
                     Text(entry.message)
                 }
             }
-            .font(.system(size: 11))
+            .scaledFont(size: 11)
             .foregroundStyle(entry.isBreaking ? Catalyst.red : Catalyst.muted)
 
             Spacer()

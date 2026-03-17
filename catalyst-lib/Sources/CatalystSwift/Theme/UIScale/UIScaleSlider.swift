@@ -34,13 +34,13 @@ public struct UIScaleSlider: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack {
                 Text("Text Scale")
-                    .font(.system(size: 12, design: .monospaced))
+                    .scaledFont(size: 12, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
 
                 Spacer()
 
                 Text("\(Int(scale * 100))%")
-                    .font(.system(size: 11, weight: .bold, design: .monospaced))
+                    .scaledFont(size: 11, weight: .bold, design: .monospaced)
                     .foregroundStyle(Catalyst.cyan)
                     .monospacedDigit()
 
@@ -60,7 +60,7 @@ public struct UIScaleSlider: View {
 
             // Live preview
             Text("The quick brown fox jumps over the lazy dog")
-                .font(.system(size: 12 * scale, design: .monospaced))
+                .scaledFont(size: 12, design: .monospaced)
                 .foregroundStyle(Catalyst.subtle)
                 .lineLimit(1)
         }

@@ -158,7 +158,7 @@ struct DashboardView: View {
                 .tracking(2)
                 .foregroundStyle(Catalyst.foreground)
             Text("Add a GitHub account to get started.")
-                .font(.caption)
+                .scaledFont(size: 11)
                 .foregroundStyle(Catalyst.muted)
                 .multilineTextAlignment(.center)
             Button("Open Settings", action: onOpenSettings)
@@ -320,7 +320,7 @@ struct PRRowContent: View {
                 HStack(alignment: .top, spacing: 6) {
                     if pr.isDraft {
                         Image(systemName: "doc")
-                            .font(.caption)
+                            .scaledFont(size: 11)
                             .foregroundStyle(Catalyst.subtle)
                     }
 

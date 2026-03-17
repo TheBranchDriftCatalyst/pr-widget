@@ -6,15 +6,14 @@ struct TeamDashboardView: View {
         VStack(spacing: 16) {
             Spacer()
             Image(systemName: "person.3.fill")
-                .font(.largeTitle)
+                .scaledFont(size: 28)
                 .foregroundStyle(Catalyst.magenta)
             Text("TEAM DASHBOARD")
                 .scaledFont(size: 14, weight: .bold, design: .monospaced)
                 .tracking(2)
                 .foregroundStyle(Catalyst.foreground)
             Text("Coming in Phase 3")
-                .font(.caption)
-                .fontDesign(.monospaced)
+                .scaledFont(size: 11, design: .monospaced)
                 .foregroundStyle(Catalyst.muted)
             Spacer()
         }

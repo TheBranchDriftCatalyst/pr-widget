@@ -312,7 +312,7 @@ public struct CatalystTooltipModifier: ViewModifier {
                 if isHovering {
                     VStack(spacing: 0) {
                         Text(text)
-                            .font(.system(size: 10, weight: .semibold, design: .monospaced))
+                            .scaledFont(size: 10, weight: .semibold, design: .monospaced)
                             .foregroundStyle(Catalyst.foreground)
                             .padding(.horizontal, 10)
                             .padding(.vertical, 5)
