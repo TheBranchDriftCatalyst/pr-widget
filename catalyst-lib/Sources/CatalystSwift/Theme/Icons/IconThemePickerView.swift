@@ -45,7 +45,7 @@ private struct VariantCard: View {
         Button(action: onSelect) {
             VStack(spacing: 8) {
                 Group {
-                    if let nsImage = NSImage(named: config.appIconPreviewName(variant: variant)) {
+                    if let nsImage = loadPreviewImage(variant: variant) {
                         Image(nsImage: nsImage)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
@@ -82,5 +82,21 @@ private struct VariantCard: View {
             .modifier(NeonGlowModifier(color: Catalyst.cyan, radius: isSelected ? 8 : 0))
         }
         .buttonStyle(.plain)
+    }
+
+    private func loadPreviewImage(variant: IconVariant) -> NSImage? {
+        let name = config.appIconPreviewName(variant: variant)
+        // Try compiled catalog
+        if let image = config.bundle.image(forResource: name) { return image }
+        // Fallback: raw xcassets from SPM
+        let imagesetURL = config.bundle.bundleURL
+            .appendingPathComponent("Assets.xcassets")
+            .appendingPathComponent("\(name).imageset")
+        if let contents = try? FileManager.default.contentsOfDirectory(atPath: imagesetURL.path),
+           let png = contents.first(where: { $0.contains("@2x") && $0.hasSuffix(".png") })
+                ?? contents.first(where: { $0.hasSuffix(".png") }) {
+            return NSImage(contentsOf: imagesetURL.appendingPathComponent(png))
+        }
+        return nil
     }
 }

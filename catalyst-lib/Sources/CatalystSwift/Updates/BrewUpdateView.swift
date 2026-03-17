@@ -1,9 +1,27 @@
 import SwiftUI
 
-/// Reusable Settings view for Homebrew cask self-update.
+/// A settings panel for Homebrew cask self-update.
+///
+/// Displays the current installed version, update status, and action buttons.
+/// Pairs with ``BrewSelfUpdater`` to check for and trigger updates.
+///
+/// ## Usage
+///
+/// ```swift
+/// struct UpdateSettingsTab: View {
+///     let updater: BrewSelfUpdater
+///
+///     var body: some View {
+///         BrewUpdateView(updater: updater)
+///     }
+/// }
+/// ```
 public struct BrewUpdateView: View {
+    /// The updater instance to bind to.
     @Bindable var updater: BrewSelfUpdater
 
+    /// Creates a brew update view.
+    /// - Parameter updater: The ``BrewSelfUpdater`` instance.
     public init(updater: BrewSelfUpdater) {
         self.updater = updater
     }

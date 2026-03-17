@@ -14,17 +14,21 @@ public struct IconThemeConfig: Sendable {
     public let variants: [IconVariant]
     public let defaultVariant: IconVariant
     public let persistenceKey: String
+    /// The bundle containing the icon assets (typically `Bundle.module` for SPM targets).
+    public nonisolated(unsafe) let bundle: Bundle
 
     public init(
         appPrefix: String,
         variants: [IconVariant] = IconVariant.allCases.map { $0 },
         defaultVariant: IconVariant = .a,
-        persistenceKey: String = "Catalyst.iconVariant"
+        persistenceKey: String = "Catalyst.iconVariant",
+        bundle: Bundle = .main
     ) {
         self.appPrefix = appPrefix
         self.variants = variants
         self.defaultVariant = defaultVariant
         self.persistenceKey = persistenceKey
+        self.bundle = bundle
     }
 
     /// Asset catalog name for a variant's menu bar icon imageset.

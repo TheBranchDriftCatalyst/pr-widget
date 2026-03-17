@@ -19,7 +19,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let brewUpdater = BrewSelfUpdater(caskName: "p-arr", appName: "PArr")
     let iconThemeManager = IconThemeManager(config: IconThemeConfig(
         appPrefix: "p-arr",
-        persistenceKey: "PArr.iconVariant"
+        persistenceKey: "PArr.iconVariant",
+        bundle: Bundle.module
     ))
 
     private enum Keys {
@@ -99,7 +100,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         if let button = statusItem.button {
             updateStatusItemIcon(button)
             button.action = #selector(statusItemClicked(_:))
-            button.sendAction(on: [.leftMouseUp, .rightMouseUp])
+            button.sendAction(on: [.leftMouseDown, .rightMouseUp])
             button.target = self
         }
 
@@ -118,9 +119,12 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     private func updateStatusItemIcon(_ button: NSStatusBarButton) {
         if let customIcon = iconThemeManager.menuBarIcon() {
+            NSLog("[PArr] Loaded custom menu bar icon, size: \(customIcon.size)")
+            // Full-color artwork — not a template icon
+            customIcon.isTemplate = false
             button.image = customIcon
         } else {
-            // Fallback to SF Symbol
+            NSLog("[PArr] Custom icon not found, using SF Symbol fallback")
             let image = NSImage(systemSymbolName: "arrow.trianglehead.pull", accessibilityDescription: "P-Arr")
             image?.isTemplate = true
             button.image = image
@@ -197,9 +201,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     @objc private func statusItemClicked(_ sender: NSStatusBarButton) {
-        guard let event = NSApp.currentEvent else { return }
+        // Activate the app first — LSUIElement apps may not receive
+        // proper events until they become the active application.
+        NSApp.activate()
 
-        if event.type == .rightMouseUp {
+        let event = NSApp.currentEvent
+
+        if event?.type == .rightMouseUp {
             showStatusMenu()
         } else {
             togglePanel()

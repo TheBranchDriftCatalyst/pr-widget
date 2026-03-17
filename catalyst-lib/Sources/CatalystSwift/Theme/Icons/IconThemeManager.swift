@@ -35,10 +35,14 @@ public final class IconThemeManager {
     }
 
     /// Load the menu bar icon for a specific variant.
+    ///
+    /// Does NOT set `isTemplate` — caller can set it if the source images
+    /// are monochrome/alpha-based. Full-color artwork should remain non-template.
     public func menuBarIcon(for variant: IconVariant) -> NSImage? {
         let name = config.menuBarImageName(variant: variant)
-        guard let image = NSImage(named: name) else { return nil }
-        image.isTemplate = true
+        guard let image = loadImage(named: name) else { return nil }
+        // Resize to standard menu bar height (18pt, auto @2x)
+        image.size = NSSize(width: 18, height: 18)
         return image
     }
 
@@ -49,7 +53,7 @@ public final class IconThemeManager {
 
     /// Load the app icon preview for a specific variant.
     public func appIconPreview(for variant: IconVariant) -> NSImage? {
-        NSImage(named: config.appIconPreviewName(variant: variant))
+        loadImage(named: config.appIconPreviewName(variant: variant))
     }
 
     /// Load an icon by slot name for the active variant.
@@ -59,11 +63,61 @@ public final class IconThemeManager {
 
     /// Load an icon for a specific slot and variant.
     public func icon(slot: String, variant: IconVariant) -> NSImage? {
-        NSImage(named: config.imageName(slot: slot, variant: variant))
+        loadImage(named: config.imageName(slot: slot, variant: variant))
     }
 
     /// SwiftUI `Image` for a given slot and the active variant.
     public func image(slot: String) -> Image {
-        Image(config.imageName(slot: slot, variant: activeVariant))
+        Image(config.imageName(slot: slot, variant: activeVariant), bundle: config.bundle)
+    }
+
+    // MARK: - Private
+
+    private func loadImage(named name: String) -> NSImage? {
+        // Try compiled asset catalog first
+        if let image = config.bundle.image(forResource: name) {
+            return image
+        }
+        // Try main bundle
+        if let image = NSImage(named: name) {
+            return image
+        }
+        // Fallback: load from raw xcassets in SPM resource bundle
+        return loadFromRawAssets(named: name)
+    }
+
+    /// SPM debug builds copy xcassets as raw directories — load PNGs directly.
+    private func loadFromRawAssets(named name: String) -> NSImage? {
+        let bundleURL = config.bundle.bundleURL
+
+        // Try as imageset: Assets.xcassets/{name}.imageset/
+        let imagesetURL = bundleURL
+            .appendingPathComponent("Assets.xcassets")
+            .appendingPathComponent("\(name).imageset")
+
+        if let contents = try? FileManager.default.contentsOfDirectory(atPath: imagesetURL.path) {
+            // Pick the @2x image if available, otherwise first PNG
+            let preferred = contents.first(where: { $0.contains("@2x") && $0.hasSuffix(".png") })
+                ?? contents.first(where: { $0.hasSuffix(".png") })
+            if let filename = preferred {
+                return NSImage(contentsOf: imagesetURL.appendingPathComponent(filename))
+            }
+        }
+
+        // Try as appiconset: Assets.xcassets/{name}.appiconset/ (use 128x128@2x)
+        let appiconsetURL = bundleURL
+            .appendingPathComponent("Assets.xcassets")
+            .appendingPathComponent("\(name).appiconset")
+
+        if let contents = try? FileManager.default.contentsOfDirectory(atPath: appiconsetURL.path) {
+            let preferred = contents.first(where: { $0.contains("128x128@2x") && $0.hasSuffix(".png") })
+                ?? contents.first(where: { $0.contains("256x256") && $0.hasSuffix(".png") })
+                ?? contents.first(where: { $0.hasSuffix(".png") })
+            if let filename = preferred {
+                return NSImage(contentsOf: appiconsetURL.appendingPathComponent(filename))
+            }
+        }
+
+        return nil
     }
 }

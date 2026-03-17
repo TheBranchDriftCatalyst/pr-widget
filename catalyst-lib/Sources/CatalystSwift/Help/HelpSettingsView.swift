@@ -1,10 +1,25 @@
 import SwiftUI
 
-/// Generic help tips view that groups tips by category string.
-/// Preserves order of first occurrence for categories.
+/// A settings view that displays all help tips grouped by category.
+///
+/// Tips are grouped by their ``HelpTip/category`` string, with categories
+/// appearing in first-occurrence order. Each row shows the tip's icon,
+/// title, description, and keyboard shortcut (if present).
+///
+/// ## Usage
+///
+/// ```swift
+/// HelpSettingsView(tips: [
+///     HelpTip(id: "1", category: "Nav", title: "Toggle", description: "...", icon: "rectangle.on.rectangle"),
+///     HelpTip(id: "2", category: "Nav", title: "Refresh", description: "...", shortcut: "Cmd+R", icon: "arrow.clockwise"),
+/// ])
+/// ```
 public struct HelpSettingsView: View {
+    /// The tips to display, grouped by category.
     public let tips: [HelpTip]
 
+    /// Creates a help settings view.
+    /// - Parameter tips: The array of help tips to display.
     public init(tips: [HelpTip]) {
         self.tips = tips
     }

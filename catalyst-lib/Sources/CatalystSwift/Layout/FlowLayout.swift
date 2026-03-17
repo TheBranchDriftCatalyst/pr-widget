@@ -1,8 +1,32 @@
 import SwiftUI
 
+/// A horizontal wrapping layout that flows items left-to-right and wraps to new rows.
+///
+/// `FlowLayout` conforms to SwiftUI's `Layout` protocol. Items are placed
+/// left-to-right until the next item would exceed the proposed width, at
+/// which point a new row begins. The same spacing value is used for both
+/// horizontal gaps and vertical row gaps.
+///
+/// ## Usage
+///
+/// ```swift
+/// FlowLayout(spacing: 6) {
+///     ForEach(tags, id: \.self) { tag in
+///         Text(tag)
+///             .font(Catalyst.label())
+///             .padding(.horizontal, 8)
+///             .padding(.vertical, 4)
+///             .background(Catalyst.cyan.opacity(0.15))
+///             .clipShape(.rect(cornerRadius: Catalyst.radiusSM))
+///     }
+/// }
+/// ```
 public struct FlowLayout: Layout {
+    /// The spacing between items, both horizontally and vertically.
     public var spacing: CGFloat
 
+    /// Creates a flow layout.
+    /// - Parameter spacing: The gap between items. Defaults to `4`.
     public init(spacing: CGFloat = 4) {
         self.spacing = spacing
     }
