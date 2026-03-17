@@ -6,6 +6,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ### Features
 
+- Branded release output with clean step indicators
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.6
+
+## [0.6.6] - 2026-03-17
+
+### Features
+
 - Add fire-and-forget 'task ship' command and update release docs
 
 ### Miscellaneous
