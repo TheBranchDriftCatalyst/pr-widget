@@ -6,6 +6,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ### Bug Fixes
 
+- Resolve infinite layout loop when clicking SearchBar TextField
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.4
+
+## [0.6.4] - 2026-03-17
+
+### Bug Fixes
+
 - Use absolute brew path and bundle path in update script
 
 ### Miscellaneous
