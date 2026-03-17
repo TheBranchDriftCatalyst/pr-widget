@@ -2,7 +2,7 @@ import Foundation
 
 @MainActor
 final class ActionHandler {
-    private let client = GitHubGraphQLClient()
+    private let client = GitHubGraphQLClient.shared
 
     func approve(pr: PullRequest, comment: String?, token: String, endpoint: URL) async throws {
         var variables: [String: Any] = [
