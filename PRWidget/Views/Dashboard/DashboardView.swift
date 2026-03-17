@@ -4,6 +4,7 @@ import CatalystSwift
 struct DashboardView: View {
     @Environment(DashboardStore.self) var store
     @Environment(AccountManager.self) var accountManager
+    @Environment(WindowManager.self) var windowManager
     @FocusState private var isSearchFocused: Bool
 
     var onOpenSettings: () -> Void = {}
@@ -16,7 +17,7 @@ struct DashboardView: View {
                 DashboardHeaderBar(
                     lastRefreshed: store.state.lastRefreshed,
                     isLoading: store.state.isLoading,
-                    isPinned: store.isPinned,
+                    isPinned: windowManager.isPinned,
                     blockedByMe: store.state.blockedByMeCount,
                     ownedByMe: store.state.ownedByMeCount,
                     readyToShip: store.state.readyToShipCount,

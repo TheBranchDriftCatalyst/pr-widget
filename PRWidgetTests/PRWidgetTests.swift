@@ -26,6 +26,7 @@ struct PRWidgetTests {
         var state = DashboardState()
         state.currentUser = "me"
         state.pullRequests = [needsReview, readyToShip, waiting]
+        state.categorize()
 
         #expect(state.needsAction.count == 1)
         #expect(state.needsAction.first?.id == "1")

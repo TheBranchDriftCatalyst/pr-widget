@@ -9,7 +9,6 @@ final class DashboardStore {
         static let activeFilter = Persisted<String>("PArr.activeFilter", default: PRFilter.all.rawValue)
         static let collapsedRepos = Persisted<[String]>("PArr.collapsedRepos", default: [])
         static let pinnedPRIDs = Persisted<[String]>("PArr.pinnedPRIDs", default: [])
-        static let isPinned = Persisted<Bool>("PArr.isPinned", default: true)
         static let repoOrder = Persisted<[String]>("PArr.repoOrder", default: [])
         static let selectedLabels = Persisted<[String]>("PArr.selectedLabels", default: [])
         static let excludedLabels = Persisted<[String]>("PArr.excludedLabels", default: [])
@@ -19,33 +18,64 @@ final class DashboardStore {
 
     var state = DashboardState()
     var activeFilter: PRFilter = .all {
-        didSet { Keys.activeFilter.save(activeFilter.rawValue) }
+        didSet {
+            Keys.activeFilter.save(activeFilter.rawValue)
+            recomputeFilteredResults()
+        }
     }
-    var searchQuery: String = ""
+    var searchQuery: String = "" {
+        didSet { recomputeFilteredResults() }
+    }
     var collapsedRepos: Set<String> = [] {
         didSet { Keys.collapsedRepos.saveSet(collapsedRepos) }
     }
     var pinnedPRIDs: Set<String> = [] {
-        didSet { Keys.pinnedPRIDs.saveSet(pinnedPRIDs) }
-    }
-    var isPinned: Bool = true {
-        didSet { Keys.isPinned.save(isPinned) }
+        didSet {
+            Keys.pinnedPRIDs.saveSet(pinnedPRIDs)
+            recomputeFilteredResults()
+        }
     }
     var selectedLabels: Set<String> = [] {
-        didSet { Keys.selectedLabels.saveSet(selectedLabels) }
+        didSet {
+            Keys.selectedLabels.saveSet(selectedLabels)
+            recomputeFilteredResults()
+        }
     }
     var excludedLabels: Set<String> = [] {
-        didSet { Keys.excludedLabels.saveSet(excludedLabels) }
+        didSet {
+            Keys.excludedLabels.saveSet(excludedLabels)
+            recomputeFilteredResults()
+        }
     }
     var selectedAuthors: Set<String> = [] {
-        didSet { Keys.selectedAuthors.saveSet(selectedAuthors) }
+        didSet {
+            Keys.selectedAuthors.saveSet(selectedAuthors)
+            recomputeFilteredResults()
+        }
     }
     var excludedAuthors: Set<String> = [] {
-        didSet { Keys.excludedAuthors.saveSet(excludedAuthors) }
+        didSet {
+            Keys.excludedAuthors.saveSet(excludedAuthors)
+            recomputeFilteredResults()
+        }
     }
     var repoOrder: [String] = [] {
-        didSet { Keys.repoOrder.save(repoOrder) }
+        didSet {
+            Keys.repoOrder.save(repoOrder)
+            recomputeFilteredResults()
+        }
     }
+
+    // MARK: - Cached filter/group results (Perf P2)
+
+    private(set) var filteredPRs: [PullRequest] = []
+    private(set) var pinnedPRs: [PullRequest] = []
+    private(set) var groupedByRepo: [(repoName: String, prs: [PullRequest])] = []
+
+    // MARK: - Cached label/author lists (Perf P3)
+
+    private(set) var availableLabels: [String] = []
+    private(set) var availableAuthors: [String] = []
 
     private let accountManager: AccountManager
     private let client = GitHubGraphQLClient()
@@ -56,17 +86,11 @@ final class DashboardStore {
         self.activeFilter = PRFilter(rawValue: Keys.activeFilter.load()) ?? .all
         self.collapsedRepos = Keys.collapsedRepos.loadSet()
         self.pinnedPRIDs = Keys.pinnedPRIDs.loadSet()
-        self.isPinned = Keys.isPinned.load()
         self.repoOrder = Keys.repoOrder.load()
         self.selectedLabels = Keys.selectedLabels.loadSet()
         self.excludedLabels = Keys.excludedLabels.loadSet()
         self.selectedAuthors = Keys.selectedAuthors.loadSet()
         self.excludedAuthors = Keys.excludedAuthors.loadSet()
-    }
-
-    var availableLabels: [String] {
-        let allLabels = state.pullRequests.flatMap { $0.labels.map(\.name) }
-        return Array(Set(allLabels)).sorted()
     }
 
     /// All unique PRLabel objects across all PRs, keyed by name (keeps first seen)
@@ -108,15 +132,10 @@ final class DashboardStore {
             .sorted { $0.name < $1.name }
     }
 
-    var availableAuthors: [String] {
-        var seen = Set<String>()
-        return state.pullRequests
-            .map(\.author.login)
-            .filter { seen.insert($0).inserted }
-            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
-    }
+    // MARK: - Recompute cached results
 
-    var filteredPRs: [PullRequest] {
+    /// Recomputes filteredPRs, pinnedPRs, and groupedByRepo from current state + filter inputs.
+    private func recomputeFilteredResults() {
         var prs = state.pullRequests
         let currentUser = state.currentUser
 
@@ -184,20 +203,16 @@ final class DashboardStore {
             prs = prs.filter { !excludedAuthors.contains($0.author.login) }
         }
 
-        return prs.sorted { $0.urgencyScore > $1.urgencyScore }
-    }
+        let sorted = prs.sorted { $0.urgencyScore > $1.urgencyScore }
+        filteredPRs = sorted
+        pinnedPRs = sorted.filter { pinnedPRIDs.contains($0.id) }
 
-    var pinnedPRs: [PullRequest] {
-        filteredPRs.filter { pinnedPRIDs.contains($0.id) }
-    }
-
-    var groupedByRepo: [(repoName: String, prs: [PullRequest])] {
-        let unpinned = filteredPRs.filter { !pinnedPRIDs.contains($0.id) }
+        // Grouped by repo (unpinned only)
+        let unpinned = sorted.filter { !pinnedPRIDs.contains($0.id) }
         let grouped = Dictionary(grouping: unpinned) { $0.repository.nameWithOwner }
         let groups = grouped.map { (repoName: $0.key, prs: $0.value) }
 
-        // Sort by custom order first, then alphabetically for unordered repos
-        return groups.sorted { a, b in
+        groupedByRepo = groups.sorted { a, b in
             let aIdx = repoOrder.firstIndex(of: a.repoName)
             let bIdx = repoOrder.firstIndex(of: b.repoName)
             switch (aIdx, bIdx) {
@@ -211,6 +226,18 @@ final class DashboardStore {
                 return a.repoName.localizedCaseInsensitiveCompare(b.repoName) == .orderedAscending
             }
         }
+    }
+
+    /// Recomputes cached availableLabels and availableAuthors from current pullRequests.
+    private func recomputeAvailableLists() {
+        let allLabels = state.pullRequests.flatMap { $0.labels.map(\.name) }
+        availableLabels = Array(Set(allLabels)).sorted()
+
+        var seen = Set<String>()
+        availableAuthors = state.pullRequests
+            .map(\.author.login)
+            .filter { seen.insert($0).inserted }
+            .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
     }
 
     func togglePin(_ prID: String) {
@@ -235,7 +262,6 @@ final class DashboardStore {
     }
 
     func moveRepo(from source: IndexSet, to destination: Int) {
-        // Ensure repoOrder contains all current repos
         let currentRepos = groupedByRepo.map(\.repoName)
         var order = currentRepos
         order.move(fromOffsets: source, toOffset: destination)
@@ -247,6 +273,19 @@ final class DashboardStore {
         return !allRepos.isEmpty && allRepos.isSubset(of: collapsedRepos)
     }
 
+    // MARK: - Account lookup helper (B1)
+
+    /// Finds the account matching the PR's sourceAccountID, falling back to first account.
+    func account(for pr: PullRequest) -> GitHubAccount? {
+        if let sourceID = pr.sourceAccountID,
+           let match = accountManager.accounts.first(where: { $0.id == sourceID }) {
+            return match
+        }
+        return accountManager.accounts.first
+    }
+
+    // MARK: - Refresh (B1 multi-account, B4 partial failure)
+
     func refresh() async {
         guard !state.isLoading else { return }
         state.isLoading = true
@@ -257,6 +296,8 @@ final class DashboardStore {
 
         var allPRs: [PullRequest] = []
         var currentUser = ""
+        var errors: [String] = []
+        var failedAccountIDs: Set<UUID> = []
 
         for account in accountManager.accounts {
             guard let token = accountManager.token(for: account) else { continue }
@@ -275,53 +316,79 @@ final class DashboardStore {
                 let authored = response.authored.nodes.compactMap { $0?.toPullRequest() }
                 let reviewRequested = response.reviewRequested.nodes.compactMap { $0?.toPullRequest() }
 
-                // Merge and deduplicate
+                // Merge, deduplicate, and stamp sourceAccountID (B1)
                 var seen = Set<String>()
-                for pr in authored + reviewRequested {
+                for var pr in authored + reviewRequested {
                     if seen.insert(pr.id).inserted {
+                        pr.sourceAccountID = account.id
                         allPRs.append(pr)
                     }
                 }
             } catch {
-                state.error = error.localizedDescription
+                errors.append("\(account.displayName): \(error.localizedDescription)")
+                failedAccountIDs.insert(account.id)
             }
+        }
+
+        // Partial failure handling (B4): preserve existing PRs from failed accounts
+        if !failedAccountIDs.isEmpty {
+            let preservedPRs = state.pullRequests.filter { pr in
+                guard let sourceID = pr.sourceAccountID else { return false }
+                return failedAccountIDs.contains(sourceID)
+            }
+            // Merge preserved PRs (avoid duplicates with successfully-fetched ones)
+            let fetchedIDs = Set(allPRs.map(\.id))
+            for pr in preservedPRs where !fetchedIDs.contains(pr.id) {
+                allPRs.append(pr)
+            }
+        }
+
+        if !errors.isEmpty {
+            state.error = errors.joined(separator: "\n")
         }
 
         state.pullRequests = allPRs
         state.currentUser = currentUser
         state.lastRefreshed = .now
         state.isLoading = false
+
+        // Recompute all cached derived data
+        state.categorize()
+        recomputeAvailableLists()
+        recomputeFilteredResults()
     }
 
-    func fetchDetail(for pr: PullRequest, force: Bool = false) async -> PRDetail? {
+    // MARK: - Fetch Detail (B1 account lookup, B5 error propagation)
+
+    func fetchDetail(for pr: PullRequest, force: Bool = false) async throws -> PRDetail {
         if !force, let existing = pr.detail { return existing }
 
-        guard let account = accountManager.accounts.first,
-              let token = accountManager.token(for: account) else { return nil }
-
-        do {
-            let response: PRDetailResponse = try await client.execute(
-                query: GitHubQueries.prDetail,
-                variables: ["id": pr.id],
-                token: token,
-                endpoint: account.graphQLEndpoint
-            )
-            let detail = response.node.toPRDetail()
-
-            // Update the stored PR with detail
-            if let index = state.pullRequests.firstIndex(where: { $0.id == pr.id }) {
-                state.pullRequests[index].detail = detail
-            }
-            return detail
-        } catch {
-            return nil
+        guard let account = account(for: pr),
+              let token = accountManager.token(for: account) else {
+            throw APIError.noToken
         }
+
+        let response: PRDetailResponse = try await client.execute(
+            query: GitHubQueries.prDetail,
+            variables: ["id": pr.id],
+            token: token,
+            endpoint: account.graphQLEndpoint
+        )
+        let detail = response.node.toPRDetail()
+
+        // Update the stored PR with detail
+        if let index = state.pullRequests.firstIndex(where: { $0.id == pr.id }) {
+            state.pullRequests[index].detail = detail
+        }
+        return detail
     }
+
+    // MARK: - Fetch File Diffs (B1 account lookup)
 
     func fetchFileDiffs(for pr: PullRequest, force: Bool = false) async throws -> [PRFileDiff] {
         if !force, let cached = fileDiffCache[pr.id] { return cached }
 
-        guard let account = accountManager.accounts.first,
+        guard let account = account(for: pr),
               let token = accountManager.token(for: account) else {
             throw APIError.noToken
         }

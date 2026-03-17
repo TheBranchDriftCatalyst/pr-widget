@@ -6,7 +6,7 @@ import SwiftUI
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private var statusItem: NSStatusItem!
-    private var windowManager: WindowManager!
+    let windowManager = WindowManager()
     private var settingsWindow: NSWindow?
     private var diffWindow: NSWindow?
     let accountManager = AccountManager()
@@ -168,8 +168,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             },
             onTogglePin: { [weak self] in
                 guard let self else { return }
-                self.dashboardStore.isPinned.toggle()
-                self.windowManager.setPinned(self.dashboardStore.isPinned)
+                self.windowManager.setPinned(!self.windowManager.isPinned)
             }
         )
         .environment(dashboardStore)
@@ -185,9 +184,10 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 self?.openDiffPanel(for: pr)
             }
         }
+        .environment(windowManager)
         .modifier(TextScaleModifier())
 
-        windowManager = WindowManager(contentView: contentView)
+        windowManager.configure(contentView: contentView)
     }
 
     private func setupGlobalHotkey() {

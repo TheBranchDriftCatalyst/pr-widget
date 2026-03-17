@@ -44,7 +44,7 @@ struct LabelContextMenu: View {
     private enum LabelAction { case add, remove, recycle }
 
     private func performAction(_ action: LabelAction, label: PRLabel) {
-        guard let account = accountManager.accounts.first,
+        guard let account = store.account(for: pr),
               let token = accountManager.token(for: account) else { return }
         let endpoint = account.graphQLEndpoint
         let handler = actionHandler

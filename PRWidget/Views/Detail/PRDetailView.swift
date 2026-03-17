@@ -12,6 +12,7 @@ struct PRDetailView: View {
     @State private var detail: PRDetail?
     @State private var synopsis: AISynopsis?
     @State private var isLoadingDetail = true
+    @State private var detailError: String?
     @State private var actionError: String?
 
     @State private var actionHandler = ActionHandler()
@@ -321,9 +322,17 @@ struct PRDetailView: View {
             Image(systemName: "exclamationmark.triangle")
                 .scaledFont(size: 18)
                 .foregroundStyle(Catalyst.warning)
-            Text("Failed to load details")
+            Text(detailError ?? "Failed to load details")
                 .scaledFont(size: 11)
                 .foregroundStyle(Catalyst.muted)
+                .multilineTextAlignment(.center)
+            Button("Retry") {
+                Task { await loadDetail() }
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(Catalyst.cyan)
+            .foregroundStyle(Catalyst.background)
+            .controlSize(.small)
         }
         .frame(maxWidth: .infinity)
         .padding(.vertical, 40)
@@ -365,7 +374,7 @@ struct PRDetailView: View {
     }
 
     private var accountCredentials: (token: String, endpoint: URL)? {
-        guard let account = accountManager.accounts.first,
+        guard let account = store.account(for: pr),
               let token = accountManager.token(for: account) else { return nil }
         return (token, account.graphQLEndpoint)
     }
@@ -374,7 +383,13 @@ struct PRDetailView: View {
 
     private func loadDetail() async {
         isLoadingDetail = true
-        detail = await store.fetchDetail(for: pr)
+        detailError = nil
+        do {
+            detail = try await store.fetchDetail(for: pr)
+        } catch {
+            detailError = error.localizedDescription
+            detail = nil
+        }
         isLoadingDetail = false
 
         if let detail {

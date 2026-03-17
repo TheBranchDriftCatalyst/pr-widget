@@ -130,7 +130,11 @@ struct DiffPanelView: View {
 
         // Ensure detail is fetched (for review threads)
         if pr.detail == nil {
-            _ = await store.fetchDetail(for: pr)
+            do {
+                _ = try await store.fetchDetail(for: pr)
+            } catch {
+                // Non-fatal: proceed without review threads
+            }
         }
 
         do {
@@ -146,7 +150,7 @@ struct DiffPanelView: View {
     }
 
     private func replyToThread(threadId: String, body: String) async throws {
-        guard let account = accountManager.accounts.first,
+        guard let account = store.account(for: pr),
               let token = accountManager.token(for: account) else { return }
 
         let newComment = try await store.replyToReviewThread(
