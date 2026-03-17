@@ -217,9 +217,11 @@ tasks:
         git add VERSION project.yml CHANGELOG.md
         git commit -m "chore(release): v${VER}"
         git tag "v${VER}"
+        git push origin main
+        git push origin "v${VER}"
         echo ""
         echo "✅ Released v${VER}"
-        echo "   Tag: v${VER}"
+        echo "   Tag: v${VER} (pushed)"
 
   release:patch:
     desc: "Release a patch version (bugfix)"
