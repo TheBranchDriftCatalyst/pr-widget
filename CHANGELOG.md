@@ -4,6 +4,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Use absolute brew path and bundle path in update script
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.3
+
+## [0.6.3] - 2026-03-17
+
 ### Miscellaneous
 
 - Update catalyst-cask to p-arr v0.6.2
