@@ -16,11 +16,15 @@ ZIP_PATH="$PROJECT_ROOT/.build/${ZIP_NAME}"
 step "Building release..."
 cd "$PROJECT_ROOT"
 BUILD_START=$SECONDS
-if ! swift build -c release 2>&1 | grep -E "^(Build complete|error:)" ; then
-  # If grep found nothing (no errors, no completion), check exit
-  true
-fi
+BUILD_OUTPUT=$(swift build -c release 2>&1)
+BUILD_EXIT=$?
 BUILD_TIME=$(( SECONDS - BUILD_START ))
+if [[ $BUILD_EXIT -ne 0 ]]; then
+  # Show only error lines on failure
+  echo "$BUILD_OUTPUT" | grep -E "^.*error:" || true
+  err "Build failed"
+  exit 1
+fi
 done_step "Built release ${DIM}(${BUILD_TIME}s)${RESET}"
 
 # ── Bundle .app ─────────────────────────────────────────────────
