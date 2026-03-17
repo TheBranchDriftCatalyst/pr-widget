@@ -4,6 +4,35 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Resolve 5 concurrency issues for Swift 6 strict concurrency
+- Dead code removal, architecture fixes, and caching improvements
+- Use GitHubGraphQLClient.shared in ActionHandler
+- **networking**: Harden API layer — GHE URLs, decode safety, retry, cache eviction
+- Store/state layer — multi-account, caching, error handling, pin ownership
+
+### Features
+
+- Icon theming, brew updates, and catalyst-lib improvements
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.5.0
+
+### Refactor
+
+- Migrate all raw fonts to scaledFont and hardcoded colors to tokens
+- Deduplicate views and extract shared components
+
+### Merge
+
+- Networking layer — GHE URLs, decode safety, retry, ETag cache eviction
+- Store/state layer — multi-account, caching, error handling, pin ownership
+- View deduplication — CollapsibleFilterSection, CountBadge, NeonDot, DashboardView decomposition
+
+## [0.5.0] - 2026-03-15
+
 ### Features
 
 - Icon theming system, build pipeline, and DocC documentation
