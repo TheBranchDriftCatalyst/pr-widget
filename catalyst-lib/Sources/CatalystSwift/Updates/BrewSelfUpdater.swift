@@ -72,6 +72,7 @@ public final class BrewSelfUpdater {
         defer { isChecking = false }
 
         do {
+            try await refreshTap()
             let version = try await fetchLatestVersion()
             latestVersion = version
             updateAvailable = version != currentVersion
@@ -121,6 +122,35 @@ public final class BrewSelfUpdater {
     }
 
     // MARK: - Private
+
+    /// Refreshes the Homebrew tap so `brew info` sees the latest cask versions.
+    private func refreshTap() async throws {
+        let brewPath = Self.findBrewPath()
+
+        try await withCheckedThrowingContinuation { (continuation: CheckedContinuation<Void, Error>) in
+            let process = Process()
+            process.executableURL = URL(fileURLWithPath: brewPath)
+            process.arguments = ["update", "--auto-update"]
+            process.standardOutput = FileHandle.nullDevice
+            process.standardError = FileHandle.nullDevice
+
+            process.terminationHandler = { process in
+                if process.terminationStatus == 0 {
+                    continuation.resume()
+                } else {
+                    // Non-fatal: proceed with stale cache rather than blocking the check
+                    continuation.resume()
+                }
+            }
+
+            do {
+                try process.run()
+            } catch {
+                // brew update failed — proceed anyway with stale cache
+                continuation.resume()
+            }
+        }
+    }
 
     private func fetchLatestVersion() async throws -> String {
         let brewPath = Self.findBrewPath()
