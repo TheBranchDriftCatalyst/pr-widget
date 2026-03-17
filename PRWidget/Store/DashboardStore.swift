@@ -135,6 +135,7 @@ final class DashboardStore {
     // MARK: - Recompute cached results
 
     /// Recomputes filteredPRs, pinnedPRs, and groupedByRepo from current state + filter inputs.
+    /// Uses equality guards to avoid triggering @Observable notifications when nothing changed.
     private func recomputeFilteredResults() {
         var prs = state.pullRequests
         let currentUser = state.currentUser
@@ -204,15 +205,23 @@ final class DashboardStore {
         }
 
         let sorted = prs.sorted { $0.urgencyScore > $1.urgencyScore }
-        filteredPRs = sorted
-        pinnedPRs = sorted.filter { pinnedPRIDs.contains($0.id) }
+
+        // Only assign if changed — @Observable fires on every set, even if equal
+        if filteredPRs != sorted {
+            filteredPRs = sorted
+        }
+
+        let newPinned = sorted.filter { pinnedPRIDs.contains($0.id) }
+        if pinnedPRs != newPinned {
+            pinnedPRs = newPinned
+        }
 
         // Grouped by repo (unpinned only)
         let unpinned = sorted.filter { !pinnedPRIDs.contains($0.id) }
         let grouped = Dictionary(grouping: unpinned) { $0.repository.nameWithOwner }
         let groups = grouped.map { (repoName: $0.key, prs: $0.value) }
 
-        groupedByRepo = groups.sorted { a, b in
+        let newGrouped = groups.sorted { a, b in
             let aIdx = repoOrder.firstIndex(of: a.repoName)
             let bIdx = repoOrder.firstIndex(of: b.repoName)
             switch (aIdx, bIdx) {
@@ -226,18 +235,31 @@ final class DashboardStore {
                 return a.repoName.localizedCaseInsensitiveCompare(b.repoName) == .orderedAscending
             }
         }
+
+        // Compare grouped tuples by repo names and PR arrays
+        let changed = newGrouped.count != groupedByRepo.count
+            || zip(newGrouped, groupedByRepo).contains { $0.repoName != $1.repoName || $0.prs != $1.prs }
+        if changed {
+            groupedByRepo = newGrouped
+        }
     }
 
     /// Recomputes cached availableLabels and availableAuthors from current pullRequests.
     private func recomputeAvailableLists() {
         let allLabels = state.pullRequests.flatMap { $0.labels.map(\.name) }
-        availableLabels = Array(Set(allLabels)).sorted()
+        let newLabels = Array(Set(allLabels)).sorted()
+        if availableLabels != newLabels {
+            availableLabels = newLabels
+        }
 
         var seen = Set<String>()
-        availableAuthors = state.pullRequests
+        let newAuthors = state.pullRequests
             .map(\.author.login)
             .filter { seen.insert($0).inserted }
             .sorted { $0.localizedCaseInsensitiveCompare($1) == .orderedAscending }
+        if availableAuthors != newAuthors {
+            availableAuthors = newAuthors
+        }
     }
 
     func togglePin(_ prID: String) {
@@ -343,17 +365,18 @@ final class DashboardStore {
             }
         }
 
-        if !errors.isEmpty {
-            state.error = errors.joined(separator: "\n")
-        }
-
-        state.pullRequests = allPRs
-        state.currentUser = currentUser
-        state.lastRefreshed = .now
-        state.isLoading = false
+        // Batch all state mutations into a single struct assignment
+        // to minimize @Observable notifications (struct = one observation point)
+        var newState = state
+        newState.pullRequests = allPRs
+        newState.currentUser = currentUser
+        newState.lastRefreshed = .now
+        newState.isLoading = false
+        newState.error = errors.isEmpty ? nil : errors.joined(separator: "\n")
+        newState.categorize()
+        state = newState
 
         // Recompute all cached derived data
-        state.categorize()
         recomputeAvailableLists()
         recomputeFilteredResults()
     }

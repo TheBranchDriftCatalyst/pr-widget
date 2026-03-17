@@ -5,7 +5,7 @@ struct DashboardView: View {
     @Environment(DashboardStore.self) var store
     @Environment(AccountManager.self) var accountManager
     @Environment(WindowManager.self) var windowManager
-    @FocusState private var isSearchFocused: Bool
+    @State private var requestSearchFocus = false
 
     var onOpenSettings: () -> Void = {}
     var onTogglePin: () -> Void = {}
@@ -34,7 +34,7 @@ struct DashboardView: View {
                     emptyStateView
                         .accessibilityIdentifier(AccessibilityID.emptyStateView)
                 } else {
-                    DashboardMainContent(isSearchFocused: $isSearchFocused)
+                    DashboardMainContent(requestSearchFocus: $requestSearchFocus)
                 }
             }
             .accessibilityIdentifier(AccessibilityID.dashboardView)
@@ -52,7 +52,7 @@ struct DashboardView: View {
                 Button("") { Task { await store.refresh() } }
                     .keyboardShortcut("r", modifiers: .command)
 
-                Button("") { isSearchFocused = true }
+                Button("") { requestSearchFocus = true }
                     .keyboardShortcut("f", modifiers: .command)
 
                 Button("") { onOpenSettings() }
@@ -109,13 +109,13 @@ struct DashboardView: View {
 
 private struct DashboardMainContent: View {
     @Environment(DashboardStore.self) var store
-    var isSearchFocused: FocusState<Bool>.Binding
+    @Binding var requestSearchFocus: Bool
 
     var body: some View {
         @Bindable var store = store
         FilterBar(activeFilter: $store.activeFilter)
         GlowDivider()
-        SearchBar(text: $store.searchQuery, isFocused: isSearchFocused)
+        SearchBar(text: $store.searchQuery, requestFocus: $requestSearchFocus)
         GlowDivider()
         LabelFilterView(
             availableLabels: store.availableLabels,

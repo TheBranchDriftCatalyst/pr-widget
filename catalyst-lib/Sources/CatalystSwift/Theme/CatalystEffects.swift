@@ -30,7 +30,7 @@ public struct GlassCardModifier: ViewModifier {
     public func body(content: Content) -> some View {
         content
             .background(reduceTransparency ? AnyShapeStyle(Catalyst.card) : AnyShapeStyle(Catalyst.cardGradient))
-            .if(!reduceTransparency) { $0.overlay(Catalyst.glass.allowsHitTesting(false)) }
+            .overlay(reduceTransparency ? AnyView(EmptyView()) : AnyView(Catalyst.glass.allowsHitTesting(false)))
             .clipShape(.rect(cornerRadius: Catalyst.radiusMD))
             .overlay(
                 RoundedRectangle(cornerRadius: Catalyst.radiusMD)
@@ -80,13 +80,9 @@ public struct NeonGlowModifier: ViewModifier {
     }
 
     public func body(content: Content) -> some View {
-        if reduceMotion {
-            content
-        } else {
-            content
-                .shadow(color: color.opacity(0.4), radius: radius / 2)
-                .shadow(color: color.opacity(0.4), radius: radius)
-        }
+        content
+            .shadow(color: reduceMotion ? .clear : color.opacity(0.4), radius: reduceMotion ? 0 : radius / 2)
+            .shadow(color: reduceMotion ? .clear : color.opacity(0.4), radius: reduceMotion ? 0 : radius)
     }
 }
 
