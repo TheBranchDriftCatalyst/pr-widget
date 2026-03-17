@@ -28,17 +28,11 @@ struct AISettingsView: View {
                 // Ollama section
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("OLLAMA")
-                            .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                            .tracking(1)
-                            .foregroundStyle(Catalyst.foreground)
+                        SectionHeader(title: "OLLAMA", accentColor: Catalyst.foreground)
 
                         Spacer()
 
-                        Circle()
-                            .fill(aiSettings.isOllamaAvailable ? Catalyst.success : Catalyst.red)
-                            .frame(width: 6, height: 6)
-                            .shadow(color: (aiSettings.isOllamaAvailable ? Catalyst.success : Catalyst.red).opacity(0.5), radius: 3)
+                        NeonDot(color: aiSettings.isOllamaAvailable ? Catalyst.success : Catalyst.red)
 
                         Toggle("", isOn: $s.ollamaEnabled)
                             .toggleStyle(.switch)
@@ -93,10 +87,7 @@ struct AISettingsView: View {
                 // OpenAI section
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("OPENAI")
-                            .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                            .tracking(1)
-                            .foregroundStyle(Catalyst.foreground)
+                        SectionHeader(title: "OPENAI", accentColor: Catalyst.foreground)
 
                         Spacer()
 

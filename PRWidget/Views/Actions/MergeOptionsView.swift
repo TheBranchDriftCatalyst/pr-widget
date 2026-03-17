@@ -21,10 +21,7 @@ struct MergeOptionsView: View {
 
     private var methodSelectionView: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("MERGE METHOD")
-                .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                .tracking(1)
-                .foregroundStyle(Catalyst.magenta)
+            SectionHeader(title: "MERGE METHOD", accentColor: Catalyst.magenta)
                 .padding(.bottom, 4)
 
             ForEach(MergeMethod.allCases, id: \.self) { method in
@@ -63,10 +60,7 @@ struct MergeOptionsView: View {
 
     private func confirmationView(method: MergeMethod) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text("CONFIRM MERGE")
-                .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                .tracking(1)
-                .foregroundStyle(Catalyst.red)
+            SectionHeader(title: "CONFIRM MERGE", accentColor: Catalyst.red)
 
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 4) {

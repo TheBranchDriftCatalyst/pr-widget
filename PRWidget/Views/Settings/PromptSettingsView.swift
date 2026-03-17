@@ -11,10 +11,7 @@ struct PromptSettingsView: View {
                 // Prompt Template
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
-                        Text("PROMPT TEMPLATE")
-                            .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                            .tracking(1)
-                            .foregroundStyle(Catalyst.foreground)
+                        SectionHeader(title: "PROMPT TEMPLATE", accentColor: Catalyst.foreground)
                         Spacer()
                         Button("Reset") {
                             aiSettings.synopsisPromptTemplate = AISettings.defaultPromptTemplate
@@ -42,10 +39,7 @@ struct PromptSettingsView: View {
 
                 // Response Format
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("RESPONSE FORMAT")
-                        .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                        .tracking(1)
-                        .foregroundStyle(Catalyst.foreground)
+                    SectionHeader(title: "RESPONSE FORMAT", accentColor: Catalyst.foreground)
 
                     TextEditor(text: $s.synopsisResponseFormat)
                         .scaledFont(size: 10, design: .monospaced)
@@ -61,10 +55,7 @@ struct PromptSettingsView: View {
 
                 // Available Variables
                 VStack(alignment: .leading, spacing: 8) {
-                    Text("AVAILABLE VARIABLES")
-                        .scaledFont(size: 11, weight: .bold, design: .monospaced)
-                        .tracking(1)
-                        .foregroundStyle(Catalyst.foreground)
+                    SectionHeader(title: "AVAILABLE VARIABLES", accentColor: Catalyst.foreground)
 
                     let variables: [(String, String)] = [
                         ("{{title}}", "PR title"),
