@@ -177,8 +177,10 @@ tasks:
 
   version:bump:
     desc: "Bump version (usage: task version:bump -- patch|minor|major)"
+    silent: true
     cmds:
       - |
+        source scripts/_brand.sh
         BUMP="{{.CLI_ARGS}}"
         BUMP="${BUMP:-patch}"
         CURRENT=$(tr -d '[:space:]' < VERSION)
@@ -188,77 +190,98 @@ tasks:
           major) MAJOR=$((MAJOR + 1)); MINOR=0; PATCH=0 ;;
           minor) MINOR=$((MINOR + 1)); PATCH=0 ;;
           patch) PATCH=$((PATCH + 1)) ;;
-          *) echo "Usage: task version:bump -- patch|minor|major"; exit 1 ;;
+          *) err "Usage: task version:bump -- patch|minor|major"; exit 1 ;;
         esac
 
         NEW="${MAJOR}.${MINOR}.${PATCH}"
         echo "$NEW" > VERSION
-
-        # Update project.yml
         sed -i '' "s/MARKETING_VERSION: \"${CURRENT}\"/MARKETING_VERSION: \"${NEW}\"/" project.yml
-
-        echo "✅ Bumped ${CURRENT} → ${NEW}"
+        done_step "Version ${DIM}${CURRENT}${RESET} → ${CYAN}${NEW}${RESET}"
 
   changelog:
     desc: Generate CHANGELOG.md from conventional commits
+    silent: true
     cmds:
-      - git-cliff -o CHANGELOG.md
-      - echo "✅ CHANGELOG.md generated"
+      - |
+        source scripts/_brand.sh
+        step "Generating changelog..."
+        git-cliff -o CHANGELOG.md 2>/dev/null
+        done_step "Changelog generated"
 
   release:
     desc: "Cut a release (usage: task release -- patch|minor|major)"
+    silent: true
     cmds:
       - |
+        source scripts/_brand.sh
         BUMP="{{.CLI_ARGS}}"
         BUMP="${BUMP:-patch}"
+
+        header "Release ${DIM}(${BUMP})${RESET}"
+
         task version:bump -- "$BUMP"
         VER=$(tr -d '[:space:]' < VERSION)
+
         task changelog
-        git add VERSION project.yml CHANGELOG.md
-        git commit -m "chore(release): v${VER}"
+
+        step "Committing release..."
+        git add VERSION project.yml CHANGELOG.md > /dev/null
+        git commit -m "chore(release): v${VER}" --quiet
+
+        step "Tagging ${CYAN}v${VER}${RESET}..."
         git tag "v${VER}"
-        git push origin main
-        git push origin "v${VER}"
-        echo ""
-        echo "✅ Released v${VER}"
-        echo "   Tag: v${VER} (pushed)"
+
+        step "Pushing..."
+        git push origin main --quiet 2>/dev/null
+        git push origin "v${VER}" --quiet 2>/dev/null
+        done_step "Pushed ${CYAN}v${VER}${RESET} to origin"
 
   release:patch:
     desc: "Release a patch version (bugfix)"
+    silent: true
     cmds:
       - task release -- patch
 
   release:minor:
     desc: "Release a minor version (new features)"
+    silent: true
     cmds:
       - task release -- minor
 
   release:major:
     desc: "Release a major version (breaking changes)"
+    silent: true
     cmds:
       - task release -- major
 
   ship:
     desc: "Fire-and-forget: release + publish in one shot (usage: task ship -- patch|minor|major)"
+    silent: true
     cmds:
       - |
         BUMP="{{.CLI_ARGS}}"
         BUMP="${BUMP:-patch}"
         task release -- "$BUMP"
         task publish
+        source scripts/_brand.sh
+        VER=$(tr -d '[:space:]' < VERSION)
+        footer "P-Arr v${VER} shipped" "https://github.com/TheBranchDriftCatalyst/pr-widget/releases/tag/v${VER}"
 
   ship:patch:
     desc: "Ship a patch release (bugfix) — fire and forget"
+    silent: true
     cmds:
       - task ship -- patch
 
   ship:minor:
     desc: "Ship a minor release (feature) — fire and forget"
+    silent: true
     cmds:
       - task ship -- minor
 
   ship:major:
     desc: "Ship a major release (breaking) — fire and forget"
+    silent: true
     cmds:
       - task ship -- major
 
@@ -266,6 +289,7 @@ tasks:
 
   package:
     desc: Build release, bundle .app, create versioned .zip
+    silent: true
     cmds:
       - ./scripts/package.sh
     sources:
@@ -275,70 +299,67 @@ tasks:
 
   publish:
     desc: "Create GitHub release and push updated cask to tap"
+    silent: true
     deps: [package]
     cmds:
       - |
+        source scripts/_brand.sh
         VER=$(tr -d '[:space:]' < VERSION)
         ZIP=".build/P-Arr-${VER}.zip"
 
         if ! command -v gh &>/dev/null; then
-          echo "Error: gh CLI not installed. Run: brew install gh"
+          err "gh CLI not installed. Run: brew install gh"
           exit 1
         fi
 
-        echo "==> Creating GitHub release v${VER}..."
-        gh release create "v${VER}" "$ZIP" \
+        header "Publish ${CYAN}v${VER}${RESET}"
+
+        step "Creating GitHub release..."
+        RELEASE_URL=$(gh release create "v${VER}" "$ZIP" \
           --title "P-Arr v${VER}" \
-          --notes-file CHANGELOG.md
+          --notes-file CHANGELOG.md 2>&1)
+        done_step "GitHub release created"
+        info "${DIM}${RELEASE_URL}${RESET}"
 
-        echo ""
-        echo "==> Release created: v${VER}"
-
-        # Update cask formula
         task cask:update
 
-        # Commit + push inside the submodule
-        echo "==> Publishing tap update..."
+        step "Publishing Homebrew tap..."
         cd catalyst-cask
-        git add Casks/p-arr.rb
-        git commit -m "Update p-arr to v${VER}"
-        git push origin main
+        git add Casks/p-arr.rb > /dev/null
+        git commit -m "Update p-arr to v${VER}" --quiet
+        git push origin main --quiet 2>/dev/null
         cd ..
+        done_step "Homebrew tap pushed"
 
-        # Update submodule ref in parent repo
-        git add catalyst-cask
-        git commit -m "chore: update catalyst-cask to p-arr v${VER}"
-
-        echo ""
-        echo "✅ Published v${VER}"
-        echo "   GitHub release + Homebrew tap updated"
+        step "Updating submodule ref..."
+        git add catalyst-cask > /dev/null
+        git commit -m "chore: update catalyst-cask to p-arr v${VER}" --quiet
+        done_step "Submodule ref updated"
 
   cask:update:
     desc: "Update cask formula with current version and SHA256"
+    silent: true
     cmds:
       - |
+        source scripts/_brand.sh
         VER=$(tr -d '[:space:]' < VERSION)
         ZIP=".build/P-Arr-${VER}.zip"
         CASK="catalyst-cask/Casks/p-arr.rb"
 
         if [[ ! -f "$ZIP" ]]; then
-          echo "Error: $ZIP not found. Run 'task package' first."
+          err "$ZIP not found. Run 'task package' first."
           exit 1
         fi
 
         if [[ ! -f "$CASK" ]]; then
-          echo "Error: $CASK not found. Run 'task cask:setup' first."
+          err "$CASK not found. Run 'task cask:setup' first."
           exit 1
         fi
 
         SHA256=$(shasum -a 256 "$ZIP" | awk '{print $1}')
-
         sed -i '' "s/version \".*\"/version \"${VER}\"/" "$CASK"
         sed -i '' "s/sha256 \".*\"/sha256 \"${SHA256}\"/" "$CASK"
-
-        echo "==> Updated $CASK"
-        echo "    version: ${VER}"
-        echo "    sha256:  ${SHA256}"
+        done_step "Cask formula updated ${DIM}(${SHA256:0:12}...)${RESET}"
 
   # ── Icon Generation ──────────────────────────────────────────────
 

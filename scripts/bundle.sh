@@ -28,10 +28,13 @@ CONTENTS="${APP_DIR}/Contents"
 MACOS="${CONTENTS}/MacOS"
 RESOURCES="${CONTENTS}/Resources"
 
-# Build if requested
-if [[ "${1:-}" == "--build" ]]; then
-    swift build 2>&1
-fi
+QUIET=false
+for arg in "$@"; do
+    case "$arg" in
+        --build) swift build 2>&1 ;;
+        --quiet) QUIET=true ;;
+    esac
+done
 
 if [[ ! -f "${BUILD_DIR}/${EXECUTABLE}" ]]; then
     echo "Error: executable not found at ${BUILD_DIR}/${EXECUTABLE}"
@@ -94,4 +97,6 @@ fi
 # Sign ad-hoc
 codesign --force --sign - --deep "$APP_DIR" 2>/dev/null || true
 
-echo "$APP_DIR"
+if [[ "$QUIET" == false ]]; then
+    echo "$APP_DIR"
+fi

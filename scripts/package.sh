@@ -4,6 +4,7 @@ set -euo pipefail
 # ── Config ──────────────────────────────────────────────────────
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 PROJECT_ROOT="$(dirname "$SCRIPT_DIR")"
+source "$SCRIPT_DIR/_brand.sh"
 VERSION="$(tr -d '[:space:]' < "$PROJECT_ROOT/VERSION")"
 
 APP_NAME="P-Arr"
@@ -12,25 +13,26 @@ ZIP_NAME="${APP_NAME}-${VERSION}.zip"
 ZIP_PATH="$PROJECT_ROOT/.build/${ZIP_NAME}"
 
 # ── Build release ───────────────────────────────────────────────
-echo "==> Building release..."
+step "Building release..."
 cd "$PROJECT_ROOT"
-swift build -c release 2>&1
+BUILD_START=$SECONDS
+if ! swift build -c release 2>&1 | grep -E "^(Build complete|error:)" ; then
+  # If grep found nothing (no errors, no completion), check exit
+  true
+fi
+BUILD_TIME=$(( SECONDS - BUILD_START ))
+done_step "Built release ${DIM}(${BUILD_TIME}s)${RESET}"
 
 # ── Bundle .app ─────────────────────────────────────────────────
-echo "==> Bundling .app..."
-BUILD_DIR=.build/release "$SCRIPT_DIR/bundle.sh"
+step "Bundling ${APP_NAME}.app..."
+BUILD_DIR=.build/release "$SCRIPT_DIR/bundle.sh" --quiet
+done_step "Bundled ${CYAN}${APP_NAME}.app${RESET}"
 
 # ── Create .zip ─────────────────────────────────────────────────
-echo "==> Packaging ${ZIP_NAME}..."
+step "Packaging ${ZIP_NAME}..."
 rm -f "$ZIP_PATH"
-# ditto preserves code signatures, extended attributes, and resource forks
 ditto -c -k --sequesterRsrc --keepParent "$APP_DIR" "$ZIP_PATH"
-
-# ── Compute SHA256 ──────────────────────────────────────────────
 SHA256=$(shasum -a 256 "$ZIP_PATH" | awk '{print $1}')
-
-echo ""
-echo "==> Package complete"
-echo "    File: .build/${ZIP_NAME}"
-echo "    Size: $(du -h "$ZIP_PATH" | awk '{print $1}')"
-echo "    SHA256: ${SHA256}"
+SIZE=$(du -h "$ZIP_PATH" | awk '{print $1}')
+done_step "Packaged ${CYAN}${ZIP_NAME}${RESET} ${DIM}(${SIZE})${RESET}"
+info "SHA256: ${DIM}${SHA256}${RESET}"
