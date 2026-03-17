@@ -238,6 +238,30 @@ tasks:
     cmds:
       - task release -- major
 
+  ship:
+    desc: "Fire-and-forget: release + publish in one shot (usage: task ship -- patch|minor|major)"
+    cmds:
+      - |
+        BUMP="{{.CLI_ARGS}}"
+        BUMP="${BUMP:-patch}"
+        task release -- "$BUMP"
+        task publish
+
+  ship:patch:
+    desc: "Ship a patch release (bugfix) — fire and forget"
+    cmds:
+      - task ship -- patch
+
+  ship:minor:
+    desc: "Ship a minor release (feature) — fire and forget"
+    cmds:
+      - task ship -- minor
+
+  ship:major:
+    desc: "Ship a major release (breaking) — fire and forget"
+    cmds:
+      - task ship -- major
+
   # ── Packaging & Distribution ──────────────────────────────────
 
   package:

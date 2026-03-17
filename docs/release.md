@@ -11,24 +11,53 @@ P-Arr is distributed as a macOS app via Homebrew cask. This document covers the 
 - Push access to `TheBranchDriftCatalyst/pr-widget` and `TheBranchDriftCatalyst/catalyst-cask`
 - The `catalyst-cask` submodule initialized (`task cask:setup`)
 
-## Quick Reference
+## Fire and Forget
+
+One command does everything — bump, changelog, commit, tag, push, build, GitHub release, Homebrew update:
 
 ```bash
-# Patch release (bugfixes)
-task release:patch
+task ship -- patch    # bugfix
+task ship -- minor    # new feature
+task ship -- major    # breaking change
 
-# Minor release (new features)
-task release:minor
-
-# Major release (breaking changes)
-task release:major
-
-# Then package, publish, and push
-task publish
-git push --follow-tags
+# Shorthands:
+task ship:patch
+task ship:minor
+task ship:major
 ```
 
-## Step-by-Step
+## Release Flow
+
+```mermaid
+flowchart TD
+    SHIP["task ship -- patch|minor|major"] --> REL
+
+    subgraph REL["task release"]
+        A["task version:bump"] -->|"VERSION + project.yml"| B["task changelog"]
+        B -->|"git-cliff → CHANGELOG.md"| C["git commit<br/>chore(release): vX.Y.Z"]
+        C --> D["git tag vX.Y.Z"]
+        D --> E["git push origin main"]
+        E --> F["git push origin vX.Y.Z"]
+    end
+
+    REL --> PUB
+
+    subgraph PUB["task publish"]
+        G["task package"] --> G1
+
+        subgraph G1["scripts/package.sh"]
+            H["swift build -c release"] --> I["scripts/bundle.sh"]
+            I -->|"Assemble .app bundle<br/>Info.plist ← VERSION<br/>Build# ← git rev-list --count<br/>codesign --force --sign -"| J["ditto → P-Arr-X.Y.Z.zip<br/>+ SHA256"]
+        end
+
+        G1 --> K["gh release create vX.Y.Z<br/>uploads .zip<br/>--notes-file CHANGELOG.md"]
+        K --> L["task cask:update<br/>sed version + SHA256<br/>into Casks/p-arr.rb"]
+        L --> M["cd catalyst-cask<br/>git commit + push"]
+        M --> N["git add catalyst-cask<br/>git commit submodule ref"]
+    end
+```
+
+## Step-by-Step (if running manually)
 
 ### 1. Commit your code changes
 
@@ -47,65 +76,55 @@ Conventional commit prefixes: `feat:`, `fix:`, `chore:`, `docs:`, `refactor:`, `
 task release:patch    # or release:minor / release:major
 ```
 
-This does three things automatically:
+This does:
 1. **Bumps VERSION** — increments the version in `VERSION` and `project.yml` (`MARKETING_VERSION`)
 2. **Generates CHANGELOG.md** — runs `git-cliff` to produce a changelog from conventional commits
 3. **Commits and tags** — creates a `chore(release): vX.Y.Z` commit and a `vX.Y.Z` git tag
+4. **Pushes** — pushes commit and tag to `origin/main`
 
-### 3. Build and package
-
-```bash
-task package
-```
-
-This runs:
-1. `swift build -c release` — optimized release build
-2. `scripts/bundle.sh` — assembles the `.app` bundle with Info.plist, entitlements, and assets
-3. Creates `P-Arr-X.Y.Z.zip` in `.build/`
-
-### 4. Publish to GitHub + Homebrew
+### 3. Publish to GitHub + Homebrew
 
 ```bash
 task publish
 ```
 
-This runs:
-1. `task package` (if not already done)
-2. Creates a GitHub release via `gh release create` with the zip attached
-3. Updates `catalyst-cask/Casks/p-arr.rb` with the new version and SHA256
-4. Commits and pushes the updated cask to the `catalyst-cask` submodule
-5. Updates the submodule ref in the parent repo
+This does:
+1. **Builds release** — `swift build -c release` (optimized)
+2. **Bundles .app** — `scripts/bundle.sh` assembles Info.plist (version from `VERSION`, build# from git commit count), copies resources, ad-hoc codesigns
+3. **Packages .zip** — `scripts/package.sh` uses `ditto` to create versioned zip + SHA256
+4. **GitHub release** — `gh release create` uploads zip with CHANGELOG.md as release notes
+5. **Homebrew cask** — Updates `catalyst-cask/Casks/p-arr.rb` with new version + SHA256, commits and pushes submodule
+6. **Submodule ref** — Updates the submodule pointer in the parent repo
 
-### 5. Push everything
+## Scripts
 
-```bash
-git push --follow-tags
-```
-
-Pushes the release commit, tag, and submodule ref update to the remote.
+| Script | Purpose |
+|--------|---------|
+| `scripts/bundle.sh` | Assembles `.app` from build output. Generates `Info.plist` from `VERSION` file, copies resources + CHANGELOG.md, ad-hoc codesigns. Accepts `BUILD_DIR` env var (debug or release). |
+| `scripts/package.sh` | Runs release build → bundle → creates versioned `.zip` via `ditto` (preserves code signatures). Outputs SHA256. |
 
 ## Version Files
 
 | File | Field | Updated by |
 |------|-------|------------|
-| `VERSION` | Plain text version | `task version:bump` |
+| `VERSION` | Plain text version (single source of truth) | `task version:bump` |
 | `project.yml` | `MARKETING_VERSION` | `task version:bump` |
 | `catalyst-cask/Casks/p-arr.rb` | `version` + `sha256` | `task cask:update` (called by `publish`) |
 
-The `VERSION` file is the single source of truth. All other version references are derived from it.
-
-## Individual Task Reference
+## Task Reference
 
 | Task | Description |
 |------|-------------|
+| `task ship -- patch\|minor\|major` | **Fire-and-forget** — release + publish in one shot |
+| `task ship:patch` | Shorthand for `task ship -- patch` |
+| `task ship:minor` | Shorthand for `task ship -- minor` |
+| `task ship:major` | Shorthand for `task ship -- major` |
+| `task release -- patch\|minor\|major` | Bump + changelog + commit + tag + push |
+| `task release:patch` | Shorthand for `task release -- patch` |
+| `task publish` | Build + package + GitHub release + Homebrew cask |
+| `task package` | Build release + bundle .app + create .zip |
 | `task version:bump -- patch\|minor\|major` | Bump version in VERSION + project.yml |
 | `task changelog` | Regenerate CHANGELOG.md via git-cliff |
-| `task release -- patch\|minor\|major` | Bump + changelog + commit + tag |
-| `task release:patch` | Shorthand for `task release -- patch` |
-| `task release:minor` | Shorthand for `task release -- minor` |
-| `task release:major` | Shorthand for `task release -- major` |
-| `task package` | Build release + bundle .app + create .zip |
-| `task publish` | GitHub release + Homebrew cask update |
 | `task cask:update` | Update cask formula with current version/SHA |
 | `task cask:setup` | Initialize the catalyst-cask submodule |
 
