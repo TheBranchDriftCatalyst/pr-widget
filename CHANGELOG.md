@@ -4,6 +4,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Suppress swift build noise in package script
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.7
+
+## [0.6.7] - 2026-03-17
+
 ### Features
 
 - Branded release output with clean step indicators
