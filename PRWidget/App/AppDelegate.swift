@@ -71,7 +71,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         setupWindowManager()
         NSLog("[PArr] Window manager set up")
         setupGlobalHotkey()
-        setupDiffPanelObserver()
 
         if accountManager.hasAccounts {
             Task {
@@ -84,11 +83,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                 pollingScheduler.start { [weak self] in
                     guard let self else { return }
                     await self.dashboardStore.refresh()
-                    self.mentionTracker.checkForMentions(
+                    await self.mentionTracker.checkForMentions(
                         prs: self.dashboardStore.state.pullRequests,
                         currentUser: self.dashboardStore.state.currentUser
                     )
-                    self.updateBadge()
+                    await self.updateBadge()
                 }
             }
         }
@@ -181,6 +180,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         .environment(pollingScheduler)
         .environment(brewUpdater)
         .environment(iconThemeManager)
+        .environment(\.openDiffPanel) { [weak self] pr in
+            Task { @MainActor in
+                self?.openDiffPanel(for: pr)
+            }
+        }
         .modifier(TextScaleModifier())
 
         windowManager = WindowManager(contentView: contentView)
@@ -189,20 +193,6 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func setupGlobalHotkey() {
         hotkeyManager.register { [weak self] in
             self?.togglePanel()
-        }
-    }
-
-    private func setupDiffPanelObserver() {
-        NotificationCenter.default.addObserver(
-            forName: .openDiffPanel,
-            object: nil,
-            queue: .main
-        ) { [weak self] notification in
-            let pr = notification.userInfo?["pr"] as? PullRequest
-            Task { @MainActor in
-                guard let self, let pr else { return }
-                self.openDiffPanel(for: pr)
-            }
         }
     }
 

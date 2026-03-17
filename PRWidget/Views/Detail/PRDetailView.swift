@@ -1,10 +1,6 @@
 import SwiftUI
 import CatalystSwift
 
-extension Notification.Name {
-    static let openDiffPanel = Notification.Name("PRWidget.openDiffPanel")
-}
-
 struct PRDetailView: View {
     let pr: PullRequest
 
@@ -12,12 +8,13 @@ struct PRDetailView: View {
     @Environment(AccountManager.self) var accountManager
     @Environment(SynopsisEngine.self) var synopsisEngine
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openDiffPanel) private var openDiffPanel
     @State private var detail: PRDetail?
     @State private var synopsis: AISynopsis?
     @State private var isLoadingDetail = true
     @State private var actionError: String?
 
-    private let actionHandler = ActionHandler()
+    @State private var actionHandler = ActionHandler()
 
     var body: some View {
         VStack(spacing: 0) {
@@ -113,7 +110,7 @@ struct PRDetailView: View {
                     .foregroundStyle(Catalyst.cyan)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
-                    .background(Catalyst.cyan.opacity(0.1), in: .rect(cornerRadius: 3))
+                    .background(Catalyst.cyan.opacity(0.1), in: .rect(cornerRadius: Catalyst.radiusSM))
                     .shadow(color: Catalyst.cyan.opacity(0.2), radius: 2)
                 Image(systemName: "arrow.right")
                     .scaledFont(size: 8)
@@ -123,17 +120,17 @@ struct PRDetailView: View {
                     .foregroundStyle(Catalyst.magenta)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
-                    .background(Catalyst.magenta.opacity(0.1), in: .rect(cornerRadius: 3))
+                    .background(Catalyst.magenta.opacity(0.1), in: .rect(cornerRadius: Catalyst.radiusSM))
                     .shadow(color: Catalyst.magenta.opacity(0.2), radius: 2)
             }
 
             HStack(spacing: 8) {
                 Label(pr.author.login, systemImage: "person")
-                    .font(.caption)
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.muted)
 
                 Label(pr.ageText, systemImage: "clock")
-                    .font(.caption)
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.muted)
 
                 Spacer()
@@ -148,7 +145,7 @@ struct PRDetailView: View {
 
                 if let detail {
                     Text("\(detail.changedFiles) files")
-                        .font(.caption)
+                        .scaledFont(size: 11)
                         .foregroundStyle(Catalyst.subtle)
                 }
             }
@@ -168,11 +165,7 @@ struct PRDetailView: View {
                 .hoverGlow(Catalyst.cyan)
 
                 Button {
-                    NotificationCenter.default.post(
-                        name: .openDiffPanel,
-                        object: nil,
-                        userInfo: ["pr": pr]
-                    )
+                    openDiffPanel(pr)
                 } label: {
                     Label("View Diff", systemImage: "doc.text.magnifyingglass")
                         .scaledFont(size: 11, weight: .medium, design: .monospaced)
@@ -326,10 +319,10 @@ struct PRDetailView: View {
     private var errorView: some View {
         VStack(spacing: 8) {
             Image(systemName: "exclamationmark.triangle")
-                .font(.title3)
+                .scaledFont(size: 18)
                 .foregroundStyle(Catalyst.warning)
             Text("Failed to load details")
-                .font(.caption)
+                .scaledFont(size: 11)
                 .foregroundStyle(Catalyst.muted)
         }
         .frame(maxWidth: .infinity)

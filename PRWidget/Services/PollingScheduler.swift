@@ -20,38 +20,38 @@ final class PollingScheduler {
         didSet { Keys.isEnabled.save(isEnabled); isEnabled ? restartIfNeeded() : stop() }
     }
 
-    private var timer: Timer?
-    private var action: (() async -> Void)?
+    private var pollingTask: Task<Void, Never>?
+    private var action: (@Sendable () async -> Void)?
 
     init() {
         self.interval = Keys.interval.load()
         self.isEnabled = Keys.isEnabled.load()
     }
 
-    func start(action: @escaping () async -> Void) {
+    func start(action: @escaping @Sendable () async -> Void) {
         self.action = action
         guard isEnabled else { return }
-        scheduleTimer()
+        schedulePolling()
     }
 
     func stop() {
-        timer?.invalidate()
-        timer = nil
+        pollingTask?.cancel()
+        pollingTask = nil
         isPolling = false
     }
 
     private func restartIfNeeded() {
         guard action != nil, isEnabled else { return }
         stop()
-        scheduleTimer()
+        schedulePolling()
     }
 
-    private func scheduleTimer() {
+    private func schedulePolling() {
         stop()
-        timer = Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { [weak self] _ in
-            guard let self else { return }
-            Task { @MainActor in
-                guard let action = self.action else { return }
+        pollingTask = Task { @MainActor [weak self] in
+            while !Task.isCancelled {
+                try? await Task.sleep(for: .seconds(self?.interval ?? 120))
+                guard let self, !Task.isCancelled, let action = self.action else { break }
                 self.isPolling = true
                 await action()
                 self.isPolling = false

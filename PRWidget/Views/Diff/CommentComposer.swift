@@ -7,6 +7,7 @@ struct CommentComposer: View {
     @State private var replyText = ""
     @State private var isSubmitting = false
     @State private var submitFailed = false
+    @State private var submitTask: Task<Void, Never>?
     @FocusState private var isFocused: Bool
 
     private var borderColor: Color {
@@ -43,7 +44,7 @@ struct CommentComposer: View {
                     isSubmitting = true
                     submitFailed = false
                     let text = replyText
-                    Task {
+                    submitTask = Task {
                         do {
                             try await onSubmit(text)
                             replyText = ""
@@ -77,5 +78,6 @@ struct CommentComposer: View {
         }
         .padding(.horizontal, 10)
         .padding(.vertical, 6)
+        .onDisappear { submitTask?.cancel() }
     }
 }

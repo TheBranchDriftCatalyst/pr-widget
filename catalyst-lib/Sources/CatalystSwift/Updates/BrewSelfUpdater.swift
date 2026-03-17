@@ -73,43 +73,43 @@ public final class BrewSelfUpdater {
 
     private func fetchLatestVersion() async throws -> String {
         let brewPath = Self.findBrewPath()
+        let cask = caskName
 
         return try await withCheckedThrowingContinuation { continuation in
             let process = Process()
             process.executableURL = URL(fileURLWithPath: brewPath)
-            process.arguments = ["info", "--cask", caskName, "--json=v2"]
+            process.arguments = ["info", "--cask", cask, "--json=v2"]
 
             let pipe = Pipe()
             process.standardOutput = pipe
             process.standardError = FileHandle.nullDevice
 
+            process.terminationHandler = { process in
+                let data = pipe.fileHandleForReading.readDataToEndOfFile()
+                guard process.terminationStatus == 0 else {
+                    continuation.resume(throwing: BrewUpdateError.caskNotFound(cask))
+                    return
+                }
+
+                do {
+                    let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
+                    guard let casks = json?["casks"] as? [[String: Any]],
+                          let first = casks.first,
+                          let version = first["version"] as? String
+                    else {
+                        continuation.resume(throwing: BrewUpdateError.parseError)
+                        return
+                    }
+                    continuation.resume(returning: version)
+                } catch {
+                    continuation.resume(throwing: BrewUpdateError.parseError)
+                }
+            }
+
             do {
                 try process.run()
             } catch {
                 continuation.resume(throwing: BrewUpdateError.brewNotFound)
-                return
-            }
-
-            process.waitUntilExit()
-
-            let data = pipe.fileHandleForReading.readDataToEndOfFile()
-            guard process.terminationStatus == 0 else {
-                continuation.resume(throwing: BrewUpdateError.caskNotFound(caskName))
-                return
-            }
-
-            do {
-                let json = try JSONSerialization.jsonObject(with: data) as? [String: Any]
-                guard let casks = json?["casks"] as? [[String: Any]],
-                      let cask = casks.first,
-                      let version = cask["version"] as? String
-                else {
-                    continuation.resume(throwing: BrewUpdateError.parseError)
-                    return
-                }
-                continuation.resume(returning: version)
-            } catch {
-                continuation.resume(throwing: BrewUpdateError.parseError)
             }
         }
     }

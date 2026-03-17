@@ -7,6 +7,9 @@ struct LabelContextMenu: View {
     let store: DashboardStore
     let accountManager: AccountManager
 
+    @State private var actionHandler = ActionHandler()
+    @State private var labelTask: Task<Void, Never>?
+
     var body: some View {
         let repoLabels = store.repoLabels(for: pr)
         let existingNames = Set(pr.labels.map(\.name))
@@ -44,21 +47,22 @@ struct LabelContextMenu: View {
         guard let account = accountManager.accounts.first,
               let token = accountManager.token(for: account) else { return }
         let endpoint = account.graphQLEndpoint
-        let actionHandler = ActionHandler()
+        let handler = actionHandler
 
-        Task {
+        labelTask = Task {
             do {
                 let updatedLabels: [PRLabel]
                 switch action {
                 case .add:
-                    updatedLabels = try await actionHandler.addLabel(to: pr, labelNodeId: label.nodeId, token: token, endpoint: endpoint)
+                    updatedLabels = try await handler.addLabel(to: pr, labelNodeId: label.nodeId, token: token, endpoint: endpoint)
                 case .remove:
-                    updatedLabels = try await actionHandler.removeLabel(from: pr, labelNodeId: label.nodeId, token: token, endpoint: endpoint)
+                    updatedLabels = try await handler.removeLabel(from: pr, labelNodeId: label.nodeId, token: token, endpoint: endpoint)
                 case .recycle:
-                    updatedLabels = try await actionHandler.recycleLabel(on: pr, labelNodeId: label.nodeId, token: token, endpoint: endpoint)
+                    updatedLabels = try await handler.recycleLabel(on: pr, labelNodeId: label.nodeId, token: token, endpoint: endpoint)
                 }
                 store.updateLabels(for: pr.id, labels: updatedLabels)
             } catch {
+                print("[LabelContextMenu] Label action failed: \(error.localizedDescription)")
                 // Label state will correct on next refresh
             }
         }

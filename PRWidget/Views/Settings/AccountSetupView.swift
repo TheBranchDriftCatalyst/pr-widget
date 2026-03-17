@@ -11,7 +11,7 @@ struct AccountSetupView: View {
     @State private var isVerifying = false
     @State private var error: String?
 
-    private let client = GitHubGraphQLClient()
+    @State private var client = GitHubGraphQLClient()
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
@@ -33,20 +33,18 @@ struct AccountSetupView: View {
 
             VStack(alignment: .leading, spacing: 4) {
                 Text("Personal Access Token")
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                    .scaledFont(size: 13, weight: .medium)
                     .foregroundStyle(Catalyst.foreground)
                 SecureField("ghp_...", text: $token)
                     .textFieldStyle(.roundedBorder)
                 Text("Needs scopes: repo, read:org")
-                    .font(.caption)
-                    .fontDesign(.monospaced)
+                    .scaledFont(size: 11, design: .monospaced)
                     .foregroundStyle(Catalyst.muted)
             }
 
             if let error {
                 Text(error)
-                    .font(.caption)
+                    .scaledFont(size: 11)
                     .foregroundStyle(Catalyst.red)
             }
 
@@ -66,8 +64,7 @@ struct AccountSetupView: View {
                 HStack {
                     ProgressView().controlSize(.small).tint(Catalyst.cyan)
                     Text("Verifying token...")
-                        .font(.caption)
-                        .fontDesign(.monospaced)
+                        .scaledFont(size: 11, design: .monospaced)
                         .foregroundStyle(Catalyst.muted)
                 }
             }
