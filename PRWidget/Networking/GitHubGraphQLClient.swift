@@ -2,6 +2,9 @@ import CryptoKit
 import Foundation
 
 actor GitHubGraphQLClient {
+    /// Shared singleton instance for use by DashboardStore, ActionHandler, AccountSetupView, etc.
+    static let shared = GitHubGraphQLClient()
+
     private let session: URLSession
     private let decoder: JSONDecoder
 
@@ -10,9 +13,13 @@ actor GitHubGraphQLClient {
 
     private var etagCache: [String: CachedResponse] = [:]
 
+    /// Maximum number of ETag cache entries before eviction kicks in.
+    private let maxCacheSize = 50
+
     private struct CachedResponse {
         let etag: String
         let data: Data
+        var lastAccessed: Date
     }
 
     init() {
@@ -32,6 +39,89 @@ actor GitHubGraphQLClient {
         let digest = SHA256.hash(data: Data(input.utf8))
         return digest.map { String(format: "%02x", $0) }.joined()
     }
+
+    // MARK: - Cache Eviction
+
+    /// Evict the oldest cache entry (by lastAccessed) when cache exceeds maxCacheSize.
+    private func evictCacheIfNeeded() {
+        guard etagCache.count > maxCacheSize else { return }
+        let oldest = etagCache.min { $0.value.lastAccessed < $1.value.lastAccessed }
+        if let oldestKey = oldest?.key {
+            etagCache.removeValue(forKey: oldestKey)
+            NSLog("[PArr] Evicted oldest ETag cache entry (%d entries remain)", etagCache.count)
+        }
+    }
+
+    // MARK: - Retry Helpers
+
+    /// Maximum number of retries for transient failures.
+    private static let maxRetries = 2
+
+    /// Base backoff intervals in seconds for each retry attempt.
+    private static let backoffIntervals: [TimeInterval] = [1.0, 3.0]
+
+    /// HTTP status codes that are safe to retry.
+    private static let retryableStatusCodes: Set<Int> = [429, 502, 503]
+
+    /// URLError codes that are safe to retry.
+    private static let retryableURLErrorCodes: Set<URLError.Code> = [
+        .timedOut,
+        .networkConnectionLost,
+    ]
+
+    /// Determine backoff for a retry attempt, honoring Retry-After header for 429s.
+    private func backoffDuration(attempt: Int, httpResponse: HTTPURLResponse?) -> TimeInterval {
+        if let httpResponse, httpResponse.statusCode == 429,
+           let retryAfter = httpResponse.value(forHTTPHeaderField: "Retry-After"),
+           let seconds = TimeInterval(retryAfter) {
+            return seconds
+        }
+        let index = min(attempt, Self.backoffIntervals.count - 1)
+        return Self.backoffIntervals[index]
+    }
+
+    /// Perform a URLRequest with retry logic for transient errors.
+    /// Returns (Data, HTTPURLResponse) on success, or throws after exhausting retries.
+    private func performRequest(_ request: URLRequest) async throws -> (Data, HTTPURLResponse) {
+        var lastError: Error?
+        var lastHTTPResponse: HTTPURLResponse?
+
+        for attempt in 0...Self.maxRetries {
+            if attempt > 0 {
+                let delay = backoffDuration(attempt: attempt - 1, httpResponse: lastHTTPResponse)
+                NSLog("[PArr] Retrying request (attempt %d) after %.1fs backoff", attempt, delay)
+                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
+            }
+
+            let data: Data
+            let response: URLResponse
+            do {
+                (data, response) = try await session.data(for: request)
+            } catch let error as URLError where Self.retryableURLErrorCodes.contains(error.code) {
+                lastError = APIError.networkError(error)
+                lastHTTPResponse = nil
+                continue
+            } catch {
+                throw APIError.networkError(error)
+            }
+
+            guard let httpResponse = response as? HTTPURLResponse else {
+                throw APIError.httpError(statusCode: 0)
+            }
+
+            if Self.retryableStatusCodes.contains(httpResponse.statusCode) {
+                lastError = APIError.httpError(statusCode: httpResponse.statusCode)
+                lastHTTPResponse = httpResponse
+                continue
+            }
+
+            return (data, httpResponse)
+        }
+
+        throw lastError ?? APIError.httpError(statusCode: 0)
+    }
+
+    // MARK: - Execute (GraphQL)
 
     func execute<T: Decodable>(
         query: String,
@@ -54,16 +144,7 @@ actor GitHubGraphQLClient {
             request.setValue(cached.etag, forHTTPHeaderField: "If-None-Match")
         }
 
-        let (data, response): (Data, URLResponse)
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw APIError.networkError(error)
-        }
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.httpError(statusCode: 0)
-        }
+        let (data, httpResponse) = try await performRequest(request)
 
         // Track rate limit
         if let remaining = httpResponse.value(forHTTPHeaderField: "x-ratelimit-remaining") {
@@ -78,13 +159,16 @@ actor GitHubGraphQLClient {
         switch httpResponse.statusCode {
         case 304:
             NSLog("[PArr] ETag cache hit (304) for GraphQL request")
-            guard let cached = etagCache[key] else {
+            guard var cached = etagCache[key] else {
                 throw APIError.httpError(statusCode: 304)
             }
+            cached.lastAccessed = Date()
+            etagCache[key] = cached
             responseData = cached.data
         case 200:
             if let etag = httpResponse.value(forHTTPHeaderField: "ETag") {
-                etagCache[key] = CachedResponse(etag: etag, data: data)
+                etagCache[key] = CachedResponse(etag: etag, data: data, lastAccessed: Date())
+                evictCacheIfNeeded()
                 NSLog("[PArr] Cached ETag for GraphQL request")
             }
             responseData = data
@@ -116,13 +200,27 @@ actor GitHubGraphQLClient {
         return result
     }
 
+    // MARK: - REST File Diffs
+
+    /// Fetch file diffs for a PR via the REST API.
+    /// - Parameter host: The GitHub host (e.g., "github.com" or "github.mycompany.com").
+    ///   For GitHub Enterprise, uses `https://{host}/api/v3/repos/...`.
+    ///   For cloud (github.com), uses `https://api.github.com/repos/...`.
     func fetchFileDiffs(
         owner: String,
         repo: String,
         number: Int,
-        token: String
+        token: String,
+        host: String = "github.com"
     ) async throws -> [RESTFileDiff] {
-        let urlString = "https://api.github.com/repos/\(owner)/\(repo)/pulls/\(number)/files?per_page=100"
+        let baseURL: String
+        if host == "github.com" {
+            baseURL = "https://api.github.com"
+        } else {
+            baseURL = "https://\(host)/api/v3"
+        }
+        let urlString = "\(baseURL)/repos/\(owner)/\(repo)/pulls/\(number)/files?per_page=100"
+
         guard let url = URL(string: urlString) else {
             throw APIError.networkError(
                 NSError(domain: "PRWidget", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
@@ -141,28 +239,22 @@ actor GitHubGraphQLClient {
             request.setValue(cached.etag, forHTTPHeaderField: "If-None-Match")
         }
 
-        let (data, response): (Data, URLResponse)
-        do {
-            (data, response) = try await session.data(for: request)
-        } catch {
-            throw APIError.networkError(error)
-        }
-
-        guard let httpResponse = response as? HTTPURLResponse else {
-            throw APIError.httpError(statusCode: 0)
-        }
+        let (data, httpResponse) = try await performRequest(request)
 
         let responseData: Data
         switch httpResponse.statusCode {
         case 304:
             NSLog("[PArr] ETag cache hit (304) for REST file diffs")
-            guard let cached = etagCache[key] else {
+            guard var cached = etagCache[key] else {
                 throw APIError.httpError(statusCode: 304)
             }
+            cached.lastAccessed = Date()
+            etagCache[key] = cached
             responseData = cached.data
         case 200:
             if let etag = httpResponse.value(forHTTPHeaderField: "ETag") {
-                etagCache[key] = CachedResponse(etag: etag, data: data)
+                etagCache[key] = CachedResponse(etag: etag, data: data, lastAccessed: Date())
+                evictCacheIfNeeded()
             }
             responseData = data
         case 401: throw APIError.unauthorized

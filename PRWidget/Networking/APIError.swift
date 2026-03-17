@@ -39,5 +39,6 @@ enum APIError: LocalizedError {
 struct GraphQLError: Decodable, Sendable {
     let message: String
     let type: String?
-    let path: [String]?
+    // Note: `path` intentionally omitted — GitHub sends mixed arrays (strings + ints)
+    // which don't decode to [String]. The field is not displayed anywhere.
 }
