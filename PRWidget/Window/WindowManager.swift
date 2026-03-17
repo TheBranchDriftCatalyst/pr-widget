@@ -1,8 +1,10 @@
 import AppKit
+import Observation
 import SwiftUI
 import CatalystSwift
 
 @MainActor
+@Observable
 final class WindowManager {
     private enum Keys {
         static let windowWidth = Persisted<Double>("PArr.windowWidth", default: 420)
@@ -10,14 +12,18 @@ final class WindowManager {
         static let isPinned = Persisted<Bool>("PArr.isPinned", default: true)
     }
 
-    private let panel: FloatingPanel
+    private var panel: FloatingPanel!
     private(set) var isPinned: Bool
 
-    init<Content: View>(contentView: Content) {
+    init() {
+        isPinned = Keys.isPinned.load()
+    }
+
+    /// Set the content view and create the floating panel. Must be called once before show/toggle.
+    func configure<Content: View>(contentView: Content) {
         let width = CGFloat(Keys.windowWidth.load())
         let height = CGFloat(Keys.windowHeight.load())
 
-        isPinned = Keys.isPinned.load()
         let frame = NSRect(x: 0, y: 0, width: width, height: height)
         panel = FloatingPanel(contentRect: frame)
 
@@ -70,10 +76,11 @@ final class WindowManager {
         layer.add(pulseDown, forKey: "glowPulse")
     }
 
-    var isVisible: Bool { panel.isVisible }
-    var panelFrame: NSRect { panel.frame }
+    var isVisible: Bool { panel?.isVisible ?? false }
+    var panelFrame: NSRect { panel?.frame ?? .zero }
 
     func toggle(relativeTo statusItem: NSStatusItem?) {
+        guard panel != nil else { return }
         if panel.isVisible {
             hide()
         } else {
@@ -82,6 +89,7 @@ final class WindowManager {
     }
 
     func show(relativeTo statusItem: NSStatusItem?) {
+        guard panel != nil else { return }
         positionBelow(statusItem)
 
         if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
@@ -102,6 +110,7 @@ final class WindowManager {
     }
 
     func hide() {
+        guard let panel else { return }
         let size = panel.frame.size
         Keys.windowWidth.save(size.width)
         Keys.windowHeight.save(size.height)
@@ -124,12 +133,13 @@ final class WindowManager {
 
     func setPinned(_ pinned: Bool) {
         isPinned = pinned
-        panel.level = pinned ? .statusBar : .normal
+        panel?.level = pinned ? .statusBar : .normal
         Keys.isPinned.save(pinned)
     }
 
     private func positionBelow(_ statusItem: NSStatusItem?) {
-        guard let button = statusItem?.button,
+        guard let panel,
+              let button = statusItem?.button,
               let buttonWindow = button.window else { return }
 
         let buttonFrame = buttonWindow.convertToScreen(button.convert(button.bounds, to: nil))

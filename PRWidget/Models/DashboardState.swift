@@ -13,24 +13,25 @@ struct DashboardState: Sendable {
     var isLoading: Bool = false
     var error: String?
 
-    var needsAction: [PullRequest] {
-        pullRequests.filter { pr in
-            // Reviews requested on the current user
-            let reviewRequested = pr.reviewRequests.contains { $0.login == currentUser }
-            // Changes requested on user's own PRs
-            let changesRequested = pr.author.login == currentUser && pr.reviewDecision == .changesRequested
-            // CI failures on user's PRs
-            let ciFailing = pr.author.login == currentUser && (pr.statusCheckRollup == .failure || pr.statusCheckRollup == .error)
-            // Merge conflicts on user's PRs
-            let hasConflicts = pr.author.login == currentUser && pr.mergeable == .conflicting
+    // Cached category arrays — updated via categorize(currentUser:)
+    private(set) var needsAction: [PullRequest] = []
+    private(set) var readyToShip: [PullRequest] = []
+    private(set) var waitingOnOthers: [PullRequest] = []
 
+    /// Recomputes the three triage categories. Call whenever `pullRequests` or `currentUser` changes.
+    mutating func categorize() {
+        let currentUser = self.currentUser
+
+        needsAction = pullRequests.filter { pr in
+            let reviewRequested = pr.reviewRequests.contains { $0.login == currentUser }
+            let changesRequested = pr.author.login == currentUser && pr.reviewDecision == .changesRequested
+            let ciFailing = pr.author.login == currentUser && (pr.statusCheckRollup == .failure || pr.statusCheckRollup == .error)
+            let hasConflicts = pr.author.login == currentUser && pr.mergeable == .conflicting
             return reviewRequested || changesRequested || ciFailing || hasConflicts
         }
         .sorted { $0.urgencyScore > $1.urgencyScore }
-    }
 
-    var readyToShip: [PullRequest] {
-        pullRequests.filter { pr in
+        readyToShip = pullRequests.filter { pr in
             pr.author.login == currentUser
             && pr.reviewDecision == .approved
             && pr.statusCheckRollup == .success
@@ -38,12 +39,10 @@ struct DashboardState: Sendable {
             && !pr.isDraft
         }
         .sorted { $0.updatedAt > $1.updatedAt }
-    }
 
-    var waitingOnOthers: [PullRequest] {
         let actionIDs = Set(needsAction.map(\.id))
         let readyIDs = Set(readyToShip.map(\.id))
-        return pullRequests.filter { pr in
+        waitingOnOthers = pullRequests.filter { pr in
             pr.author.login == currentUser
             && !actionIDs.contains(pr.id)
             && !readyIDs.contains(pr.id)

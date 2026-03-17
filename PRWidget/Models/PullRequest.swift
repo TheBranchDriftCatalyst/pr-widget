@@ -23,6 +23,8 @@ struct PullRequest: Identifiable, Sendable {
     let assignees: [PRUser]
     let reviewRequests: [PRUser]
     var detail: PRDetail?
+    /// The UUID of the GitHubAccount that fetched this PR (for multi-account support).
+    var sourceAccountID: UUID?
 
     var repoNameWithOwner: String { repository.nameWithOwner }
 
@@ -78,10 +80,11 @@ struct PullRequest: Identifiable, Sendable {
 
 extension PullRequest: Hashable {
     static func == (lhs: PullRequest, rhs: PullRequest) -> Bool {
-        lhs.id == rhs.id
+        lhs.id == rhs.id && lhs.updatedAt == rhs.updatedAt
     }
 
     func hash(into hasher: inout Hasher) {
         hasher.combine(id)
+        hasher.combine(updatedAt)
     }
 }
