@@ -4,6 +4,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ## [Unreleased]
 
+### Bug Fixes
+
+- Run brew update before checking for new cask versions
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.1
+
+## [0.6.1] - 2026-03-17
+
 ### Miscellaneous
 
 - Update catalyst-cask to p-arr v0.6.0
