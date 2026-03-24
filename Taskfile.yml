@@ -220,15 +220,29 @@ tasks:
 
         header "Release ${DIM}(${BUMP})${RESET}"
 
+        # 1. Bump version
         task version:bump -- "$BUMP"
         VER=$(tr -d '[:space:]' < VERSION)
 
-        task changelog
+        # 2. Package + update cask (so the commit exists before changelog)
+        task package
+        task cask:update
 
-        step "Committing release..."
-        git add VERSION project.yml CHANGELOG.md > /dev/null
+        cd catalyst-cask
+        git add Casks/p-arr.rb > /dev/null
+        git commit -m "Update p-arr to v${VER}" --quiet
+        git push origin main --quiet 2>/dev/null
+        cd ..
+
+        git add VERSION project.yml catalyst-cask > /dev/null
+        git commit -m "chore: update catalyst-cask to p-arr v${VER}" --quiet
+
+        # 3. Generate changelog (now includes the cask commit)
+        task changelog
+        git add CHANGELOG.md > /dev/null
         git commit -m "chore(release): v${VER}" --quiet
 
+        # 4. Tag after all commits
         step "Tagging ${CYAN}v${VER}${RESET}..."
         git tag "v${VER}"
 
@@ -260,61 +274,12 @@ tasks:
     silent: true
     cmds:
       - |
-        source scripts/_brand.sh
         BUMP="{{.CLI_ARGS}}"
         BUMP="${BUMP:-patch}"
-
-        header "Release ${DIM}(${BUMP})${RESET}"
-
-        # 1. Bump version
-        task version:bump -- "$BUMP"
+        task release -- "$BUMP"
+        task publish
+        source scripts/_brand.sh
         VER=$(tr -d '[:space:]' < VERSION)
-
-        # 2. Generate changelog
-        task changelog
-
-        # 3. Package (build release + bundle + zip)
-        task package
-
-        # 4. Update cask formula (uses local zip SHA)
-        task cask:update
-
-        # 5. Commit everything — cask update is part of the release commit
-        step "Committing release..."
-        cd catalyst-cask
-        git add Casks/p-arr.rb > /dev/null
-        git commit -m "Update p-arr to v${VER}" --quiet
-        git push origin main --quiet 2>/dev/null
-        cd ..
-
-        git add VERSION project.yml CHANGELOG.md catalyst-cask > /dev/null
-        git commit -m "chore(release): v${VER}" --quiet
-
-        # 6. Tag AFTER all commits
-        step "Tagging ${CYAN}v${VER}${RESET}..."
-        git tag "v${VER}"
-
-        step "Pushing..."
-        git push origin main --quiet 2>/dev/null
-        git push origin "v${VER}" --quiet 2>/dev/null
-        done_step "Pushed ${CYAN}v${VER}${RESET} to origin"
-
-        # 7. Create GitHub release (tag already exists)
-        header "Publish ${CYAN}v${VER}${RESET}"
-        ZIP=".build/P-Arr-${VER}.zip"
-
-        if ! command -v gh &>/dev/null; then
-          err "gh CLI not installed. Run: brew install gh"
-          exit 1
-        fi
-
-        step "Creating GitHub release..."
-        RELEASE_URL=$(gh release create "v${VER}" "$ZIP" \
-          --title "P-Arr v${VER}" \
-          --notes-file CHANGELOG.md 2>&1)
-        done_step "GitHub release created"
-        info "${DIM}${RELEASE_URL}${RESET}"
-
         footer "P-Arr v${VER} shipped" "https://github.com/TheBranchDriftCatalyst/pr-widget/releases/tag/v${VER}"
 
   ship:patch:
@@ -348,9 +313,8 @@ tasks:
       - VERSION
 
   publish:
-    desc: "Create GitHub release and push updated cask to tap"
+    desc: "Create GitHub release from existing tag and package"
     silent: true
-    deps: [package]
     cmds:
       - |
         source scripts/_brand.sh
@@ -362,6 +326,11 @@ tasks:
           exit 1
         fi
 
+        if [[ ! -f "$ZIP" ]]; then
+          err "$ZIP not found. Run 'task release' first."
+          exit 1
+        fi
+
         header "Publish ${CYAN}v${VER}${RESET}"
 
         step "Creating GitHub release..."
@@ -370,21 +339,6 @@ tasks:
           --notes-file CHANGELOG.md 2>&1)
         done_step "GitHub release created"
         info "${DIM}${RELEASE_URL}${RESET}"
-
-        task cask:update
-
-        step "Publishing Homebrew tap..."
-        cd catalyst-cask
-        git add Casks/p-arr.rb > /dev/null
-        git commit -m "Update p-arr to v${VER}" --quiet
-        git push origin main --quiet 2>/dev/null
-        cd ..
-        done_step "Homebrew tap pushed"
-
-        step "Updating submodule ref..."
-        git add catalyst-cask > /dev/null
-        git commit -m "chore: update catalyst-cask to p-arr v${VER}" --quiet
-        done_step "Submodule ref updated"
 
   cask:update:
     desc: "Update cask formula with current version and SHA256"
