@@ -2,11 +2,26 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.6.11] - 2026-03-24
+
+### Bug Fixes
+
+- Skip catalyst-cask update commits from changelog
+- Reorder ship task so cask update is included before the tag
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.10
+
 ## [0.6.10] - 2026-03-24
 
 ### Bug Fixes
 
 - Pass --tag to git-cliff so releases aren't labeled Unreleased
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.9
 
 ## [0.6.9] - 2026-03-24
 
@@ -14,17 +29,29 @@ All notable changes to PR Widget will be documented in this file.
 
 - Copy resource bundle to app root for SPM compatibility
 
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.8
+
 ## [0.6.8] - 2026-03-17
 
 ### Bug Fixes
 
 - Suppress swift build noise in package script
 
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.7
+
 ## [0.6.7] - 2026-03-17
 
 ### Features
 
 - Branded release output with clean step indicators
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.6
 
 ## [0.6.6] - 2026-03-17
 
@@ -35,6 +62,7 @@ All notable changes to PR Widget will be documented in this file.
 ### Miscellaneous
 
 - Add git push to release task for tags and commits
+- Update catalyst-cask to p-arr v0.6.5
 
 ## [0.6.5] - 2026-03-17
 
@@ -42,17 +70,41 @@ All notable changes to PR Widget will be documented in this file.
 
 - Resolve infinite layout loop when clicking SearchBar TextField
 
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.4
+
 ## [0.6.4] - 2026-03-17
 
 ### Bug Fixes
 
 - Use absolute brew path and bundle path in update script
 
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.3
+
+## [0.6.3] - 2026-03-17
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.2
+
 ## [0.6.2] - 2026-03-17
 
 ### Bug Fixes
 
 - Run brew update before checking for new cask versions
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.1
+
+## [0.6.1] - 2026-03-17
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.0
 
 ## [0.6.0] - 2026-03-17
 
@@ -67,6 +119,10 @@ All notable changes to PR Widget will be documented in this file.
 ### Features
 
 - Icon theming, brew updates, and catalyst-lib improvements
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.5.0
 
 ### Refactor
 
