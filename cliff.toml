@@ -37,7 +37,6 @@ commit_parsers = [
     { message = "^build", group = "Build" },
     { message = "^ci", group = "CI" },
     { message = "^chore\\(release\\)", skip = true },
-    { message = "^chore: update catalyst-cask", skip = true },
     { message = "^chore", group = "Miscellaneous" },
 ]
 protect_breaking_commits = false

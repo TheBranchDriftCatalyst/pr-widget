@@ -260,12 +260,61 @@ tasks:
     silent: true
     cmds:
       - |
+        source scripts/_brand.sh
         BUMP="{{.CLI_ARGS}}"
         BUMP="${BUMP:-patch}"
-        task release -- "$BUMP"
-        task publish
-        source scripts/_brand.sh
+
+        header "Release ${DIM}(${BUMP})${RESET}"
+
+        # 1. Bump version
+        task version:bump -- "$BUMP"
         VER=$(tr -d '[:space:]' < VERSION)
+
+        # 2. Generate changelog
+        task changelog
+
+        # 3. Package (build release + bundle + zip)
+        task package
+
+        # 4. Update cask formula (uses local zip SHA)
+        task cask:update
+
+        # 5. Commit everything — cask update is part of the release commit
+        step "Committing release..."
+        cd catalyst-cask
+        git add Casks/p-arr.rb > /dev/null
+        git commit -m "Update p-arr to v${VER}" --quiet
+        git push origin main --quiet 2>/dev/null
+        cd ..
+
+        git add VERSION project.yml CHANGELOG.md catalyst-cask > /dev/null
+        git commit -m "chore(release): v${VER}" --quiet
+
+        # 6. Tag AFTER all commits
+        step "Tagging ${CYAN}v${VER}${RESET}..."
+        git tag "v${VER}"
+
+        step "Pushing..."
+        git push origin main --quiet 2>/dev/null
+        git push origin "v${VER}" --quiet 2>/dev/null
+        done_step "Pushed ${CYAN}v${VER}${RESET} to origin"
+
+        # 7. Create GitHub release (tag already exists)
+        header "Publish ${CYAN}v${VER}${RESET}"
+        ZIP=".build/P-Arr-${VER}.zip"
+
+        if ! command -v gh &>/dev/null; then
+          err "gh CLI not installed. Run: brew install gh"
+          exit 1
+        fi
+
+        step "Creating GitHub release..."
+        RELEASE_URL=$(gh release create "v${VER}" "$ZIP" \
+          --title "P-Arr v${VER}" \
+          --notes-file CHANGELOG.md 2>&1)
+        done_step "GitHub release created"
+        info "${DIM}${RELEASE_URL}${RESET}"
+
         footer "P-Arr v${VER} shipped" "https://github.com/TheBranchDriftCatalyst/pr-widget/releases/tag/v${VER}"
 
   ship:patch:
