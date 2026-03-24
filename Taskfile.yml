@@ -204,8 +204,9 @@ tasks:
     cmds:
       - |
         source scripts/_brand.sh
+        VER=$(tr -d '[:space:]' < VERSION)
         step "Generating changelog..."
-        git-cliff -o CHANGELOG.md 2>/dev/null
+        git-cliff --tag "v${VER}" -o CHANGELOG.md 2>/dev/null
         done_step "Changelog generated"
 
   release:
