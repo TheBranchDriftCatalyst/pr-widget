@@ -6,6 +6,16 @@ All notable changes to PR Widget will be documented in this file.
 
 ### Bug Fixes
 
+- Copy resource bundle to app root for SPM compatibility
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.8
+
+## [0.6.8] - 2026-03-17
+
+### Bug Fixes
+
 - Suppress swift build noise in package script
 
 ### Miscellaneous
