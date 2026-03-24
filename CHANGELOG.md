@@ -2,7 +2,17 @@
 
 All notable changes to PR Widget will be documented in this file.
 
-## [Unreleased]
+## [0.6.10] - 2026-03-24
+
+### Bug Fixes
+
+- Pass --tag to git-cliff so releases aren't labeled Unreleased
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.9
+
+## [0.6.9] - 2026-03-24
 
 ### Bug Fixes
 
