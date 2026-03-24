@@ -83,9 +83,12 @@ cat > "${CONTENTS}/Info.plist" <<PLIST
 PLIST
 
 # Copy resource bundles
+# SPM's resource_bundle_accessor.swift looks at Bundle.main.bundleURL (the .app root),
+# so the bundle must exist at the app root level, not just in Contents/Resources/.
 RESOURCE_BUNDLE="${BUILD_DIR}/PArr_PArr.bundle"
 if [[ -d "$RESOURCE_BUNDLE" ]]; then
     cp -R "$RESOURCE_BUNDLE" "$RESOURCES/"
+    cp -R "$RESOURCE_BUNDLE" "$APP_DIR/"
 fi
 
 # Copy CHANGELOG.md for in-app changelog viewer
