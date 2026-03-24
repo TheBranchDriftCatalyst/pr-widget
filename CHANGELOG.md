@@ -2,6 +2,16 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.6.12] - 2026-03-24
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.6.12
+
+### Refactor
+
+- Fix release ordering so cask update appears in correct version
+
 ## [0.6.11] - 2026-03-24
 
 ### Bug Fixes
