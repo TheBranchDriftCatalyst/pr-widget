@@ -224,8 +224,13 @@ tasks:
         task version:bump -- "$BUMP"
         VER=$(tr -d '[:space:]' < VERSION)
 
-        # 2. Package + update cask (so the commit exists before changelog)
+        # 2. Generate changelog FIRST (so it's bundled in the app)
+        task changelog
+
+        # 3. Package (includes updated CHANGELOG.md with this version's entry)
         task package
+
+        # 4. Update cask (needs package for SHA)
         task cask:update
 
         cd catalyst-cask
@@ -237,7 +242,7 @@ tasks:
         git add VERSION project.yml catalyst-cask > /dev/null
         git commit -m "chore: update catalyst-cask to p-arr v${VER}" --quiet
 
-        # 3. Generate changelog (now includes the cask commit)
+        # 5. Regenerate changelog (now includes the cask commit)
         task changelog
         git add CHANGELOG.md > /dev/null
         git commit -m "chore(release): v${VER}" --quiet
