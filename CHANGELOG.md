@@ -2,6 +2,22 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.7.0] - 2026-03-25
+
+### Bug Fixes
+
+- Use updated PR with detail for diff file loading
+
+### Features
+
+- Badge shows owed reviews + pending PRs from current filter set
+- Show your review state as a pill badge in PR rows
+- Add Logs tab to settings with reusable CatalystSwift LogViewer
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.7.0
+
 ## [0.6.12] - 2026-03-24
 
 ### Miscellaneous
