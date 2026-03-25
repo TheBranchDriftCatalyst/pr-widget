@@ -47,9 +47,36 @@ PRWidget/
 - Dev mode: `task dev` (fswatch → rebuild → relaunch on file changes)
 - Xcode project: `task generate` (xcodegen from project.yml)
 
+## Release Workflow
+
+```bash
+task ship -- patch|minor|major   # Full release: bump → changelog → package → cask → tag → publish
+task release -- patch            # Cut release only (no GitHub release)
+task publish                     # Create GitHub release from existing tag + package
+```
+
+**Release flow (`task ship`):**
+1. Bump version (VERSION + project.yml)
+2. Generate changelog via `git-cliff --tag vX.Y.Z` (conventional commits)
+3. Package (build release → bundle .app → zip)
+4. Update Homebrew cask formula (SHA256 from zip)
+5. Commit all + tag + push
+6. Create GitHub release + upload zip
+
+**Changelog rules (`cliff.toml`):**
+- Generated from conventional commit prefixes (`feat:`, `fix:`, `refactor:`, etc.)
+- `chore(release):` and `chore: update catalyst-cask` commits are skipped (infrastructure noise)
+- Changelog is generated before packaging so the app bundle always has the current version's entry
+
+**Homebrew distribution:**
+- Cask lives in `catalyst-cask/` submodule (TheBranchDriftCatalyst/homebrew-catalyst tap)
+- `brew install TheBranchDriftCatalyst/catalyst/p-arr`
+
 ## Key Patterns
 
 - `@MainActor` on all UI-facing classes (Swift 6 strict concurrency)
 - GraphQL responses decoded to flat `Decodable` structs, then mapped to domain models via `PRNode.toPullRequest()`
 - PRs categorized by computed properties on `DashboardState` (needsAction, readyToShip, waitingOnOthers)
 - Urgency score computed from age + review state + CI status + conflicts + size
+- Menu bar badge shows sum of: reviews you owe + your PRs awaiting review, scoped to active filter set
+- CatalystSwift lib (`catalyst-lib/`) provides reusable components: theme, persistence, changelog viewer, brew updater, log viewer, icon theming
