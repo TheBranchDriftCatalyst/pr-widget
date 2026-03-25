@@ -73,6 +73,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         NSLog("[PArr] Window manager set up")
         setupGlobalHotkey()
 
+        observeBadgeChanges()
+
         if accountManager.hasAccounts {
             Task {
                 await dashboardStore.refresh()
@@ -140,7 +142,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         badgeView?.removeFromSuperview()
         badgeView = nil
 
-        let count = mentionTracker.unreadMentionCount
+        // Badge = sum of two independent counts from the current filter set:
+        // 1. Reviews you owe (requested but not yet submitted)
+        // 2. Your PRs still awaiting review (not yet approved)
+        let currentUser = dashboardStore.state.currentUser
+        let filtered = dashboardStore.filteredPRs
+        let owedReviews = filtered.filter { pr in
+            pr.reviewRequests.contains { $0.login == currentUser }
+            && pr.reviews.allSatisfy { $0.author.login != currentUser || $0.state == .pending }
+        }.count
+        let awaitingReview = filtered.filter { pr in
+            pr.author.login == currentUser
+            && pr.reviewDecision != .approved
+            && !pr.isDraft
+        }.count
+        let count = owedReviews + awaitingReview
         guard count > 0 else { return }
 
         let badgeSize: CGFloat = 14
@@ -197,6 +213,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func setupGlobalHotkey() {
         hotkeyManager.register { [weak self] in
             self?.togglePanel()
+        }
+    }
+
+    /// Observe `filteredPRs` so the badge updates when filters change, not just on refresh.
+    private func observeBadgeChanges() {
+        withObservationTracking {
+            _ = dashboardStore.filteredPRs
+        } onChange: { [weak self] in
+            Task { @MainActor in
+                self?.updateBadge()
+                self?.observeBadgeChanges()
+            }
         }
     }
 
