@@ -137,8 +137,11 @@ struct DiffPanelView: View {
             }
         }
 
+        // Use the store's updated copy (has detail with review threads)
+        let updatedPR = store.state.pullRequests.first(where: { $0.id == pr.id }) ?? pr
+
         do {
-            files = try await store.fetchFileDiffs(for: pr)
+            files = try await store.fetchFileDiffs(for: updatedPR)
             if let first = files.first {
                 selectedPath = first.path
             }
