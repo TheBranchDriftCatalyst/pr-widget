@@ -2,6 +2,16 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.7.1] - 2026-03-25
+
+### Bug Fixes
+
+- Generate changelog before packaging so app bundle has current version entry
+
+### Miscellaneous
+
+- Update catalyst-cask to p-arr v0.7.1
+
 ## [0.7.0] - 2026-03-25
 
 ### Bug Fixes
