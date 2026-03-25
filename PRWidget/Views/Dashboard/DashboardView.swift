@@ -363,6 +363,7 @@ struct PRRowContent: View {
                 HStack(spacing: 8) {
                     StatusBadge(status: pr.statusCheckRollup)
                     ReviewAvatars(reviews: pr.reviews, reviewRequests: pr.reviewRequests)
+                    myReviewBadge
 
                     if pr.mergeable == .conflicting {
                         Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
@@ -414,6 +415,53 @@ struct PRRowContent: View {
             Divider()
             LabelContextMenu(pr: pr, store: store, accountManager: accountManager)
         }
+    }
+
+    /// Shows the current user's review state on this PR.
+    @ViewBuilder
+    private var myReviewBadge: some View {
+        let currentUser = store.state.currentUser
+        let isAuthor = pr.author.login == currentUser
+        let myReview = pr.reviews.last { $0.author.login == currentUser }
+        let reviewRequested = pr.reviewRequests.contains { $0.login == currentUser }
+
+        if isAuthor {
+            // Show review decision for your own PRs
+            switch pr.reviewDecision {
+            case .approved:
+                reviewPill("APPROVED", icon: "checkmark", color: Catalyst.approved)
+            case .changesRequested:
+                reviewPill("CHANGES", icon: "xmark", color: Catalyst.changesRequested)
+            case .reviewRequired:
+                reviewPill("PENDING", icon: "clock", color: Catalyst.pendingReview)
+            case nil:
+                EmptyView()
+            }
+        } else if let myReview {
+            switch myReview.state {
+            case .approved:
+                reviewPill("YOU APPROVED", icon: "checkmark", color: Catalyst.approved)
+            case .changesRequested:
+                reviewPill("YOU BLOCKED", icon: "xmark", color: Catalyst.changesRequested)
+            case .commented:
+                reviewPill("COMMENTED", icon: "text.bubble", color: Catalyst.commented)
+            case .dismissed, .pending:
+                if reviewRequested {
+                    reviewPill("REVIEW", icon: "eye", color: Catalyst.yellow)
+                }
+            }
+        } else if reviewRequested {
+            reviewPill("REVIEW", icon: "eye", color: Catalyst.yellow)
+        }
+    }
+
+    private func reviewPill(_ text: String, icon: String, color: Color) -> some View {
+        Label(text, systemImage: icon)
+            .scaledFont(size: 9, weight: .bold, design: .monospaced)
+            .foregroundStyle(color)
+            .padding(.horizontal, 5)
+            .padding(.vertical, 1)
+            .background(color.opacity(0.15), in: Capsule())
     }
 
     private func accentColor(for pr: PullRequest) -> Color {
