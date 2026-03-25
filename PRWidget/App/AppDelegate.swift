@@ -17,6 +17,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let pollingScheduler = PollingScheduler()
     private let hotkeyManager = HotkeyManager()
     let brewUpdater = BrewSelfUpdater(caskName: "p-arr", appName: "PArr")
+    let logStore = LogStore()
     let iconThemeManager = IconThemeManager(config: IconThemeConfig(
         appPrefix: "p-arr",
         persistenceKey: "PArr.iconVariant",
@@ -271,6 +272,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             .environment(aiSettings)
             .environment(hotkeyManager)
             .environment(brewUpdater)
+            .environment(logStore)
             .environment(iconThemeManager)
             .modifier(TextScaleModifier())
 

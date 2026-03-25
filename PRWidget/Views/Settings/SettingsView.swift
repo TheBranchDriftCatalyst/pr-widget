@@ -6,6 +6,7 @@ struct SettingsView: View {
     @Environment(AISettings.self) var aiSettings
     @Environment(HotkeyManager.self) var hotkeyManager
     @Environment(BrewSelfUpdater.self) var brewUpdater
+    @Environment(LogStore.self) var logStore
 
     var body: some View {
         TabView {
@@ -37,8 +38,16 @@ struct SettingsView: View {
                 ChangelogView(releases: ChangelogParser.fromBundle())
             }
 
+            Tab("Logs", systemImage: "terminal") {
+                LogViewerView(store: logStore)
+            }
+
             Tab("Help", systemImage: "questionmark.circle") {
                 HelpSettingsView(tips: HelpTip.all)
+            }
+
+            Tab("About", systemImage: "info.circle") {
+                AboutSettingsView()
             }
         }
         .tabViewStyle(.sidebarAdaptable)
