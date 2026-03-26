@@ -2,6 +2,16 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.7.3] - 2026-03-26
+
+### Documentation
+
+- Add release workflow and key patterns to project docs
+
+### Features
+
+- Replace menu bar icon with new full-color p-arr icon
+
 ## [0.7.2] - 2026-03-25
 
 ### Bug Fixes
