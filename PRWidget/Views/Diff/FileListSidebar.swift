@@ -20,69 +20,68 @@ struct FileListSidebar: View {
     }
 
     private func fileRow(_ file: PRFileDiff) -> some View {
-        Button {
-            selectedPath = file.path
-        } label: {
-            HStack(spacing: 6) {
-                changeTypeIcon(file.status)
+        HStack(spacing: 6) {
+            changeTypeIcon(file.status)
 
-                VStack(alignment: .leading, spacing: 2) {
-                    Text(file.path.components(separatedBy: "/").last ?? file.path)
-                        .scaledFont(size: 12, weight: .medium, design: .monospaced)
-                        .foregroundStyle(Catalyst.foreground)
-                        .lineLimit(1)
-                        .truncationMode(.middle)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(file.path.components(separatedBy: "/").last ?? file.path)
+                    .scaledFont(size: 12, weight: .medium, design: .monospaced)
+                    .foregroundStyle(Catalyst.foreground)
+                    .lineLimit(1)
+                    .truncationMode(.middle)
 
-                    Text(file.path)
-                        .scaledFont(size: 9, design: .monospaced)
-                        .foregroundStyle(Catalyst.subtle)
-                        .lineLimit(1)
-                        .truncationMode(.head)
+                Text(file.path)
+                    .scaledFont(size: 9, design: .monospaced)
+                    .foregroundStyle(Catalyst.subtle)
+                    .lineLimit(1)
+                    .truncationMode(.head)
+            }
+
+            Spacer()
+
+            VStack(alignment: .trailing, spacing: 1) {
+                HStack(spacing: 2) {
+                    Text("+\(file.additions)")
+                        .foregroundStyle(Catalyst.cyan)
+                    Text("-\(file.deletions)")
+                        .foregroundStyle(Catalyst.red)
                 }
+                .scaledFont(size: 10, design: .monospaced)
 
-                Spacer()
-
-                VStack(alignment: .trailing, spacing: 1) {
+                let threadCount = file.reviewThreads.count
+                let unresolvedCount = file.reviewThreads.filter { !$0.isResolved }.count
+                if threadCount > 0 {
                     HStack(spacing: 2) {
-                        Text("+\(file.additions)")
-                            .foregroundStyle(Catalyst.cyan)
-                        Text("-\(file.deletions)")
-                            .foregroundStyle(Catalyst.red)
-                    }
-                    .scaledFont(size: 10, design: .monospaced)
+                        Image(systemName: "text.bubble.fill")
+                            .scaledFont(size: 8)
+                            .foregroundStyle(Catalyst.blue)
 
-                    let threadCount = file.reviewThreads.count
-                    let unresolvedCount = file.reviewThreads.filter { !$0.isResolved }.count
-                    if threadCount > 0 {
-                        HStack(spacing: 2) {
-                            Image(systemName: "text.bubble.fill")
-                                .scaledFont(size: 8)
+                        if unresolvedCount == threadCount {
+                            Text("\(threadCount)")
+                                .scaledFont(size: 9, weight: .medium, design: .monospaced)
                                 .foregroundStyle(Catalyst.blue)
-
-                            if unresolvedCount == threadCount {
-                                Text("\(threadCount)")
-                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
-                                    .foregroundStyle(Catalyst.blue)
-                            } else {
-                                Text("\(unresolvedCount)")
-                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
-                                    .foregroundStyle(Catalyst.blue)
-                                Text("/")
-                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
-                                    .foregroundStyle(Catalyst.subtle)
-                                Text("\(threadCount)")
-                                    .scaledFont(size: 9, weight: .medium, design: .monospaced)
-                                    .foregroundStyle(Catalyst.subtle)
-                            }
+                        } else {
+                            Text("\(unresolvedCount)")
+                                .scaledFont(size: 9, weight: .medium, design: .monospaced)
+                                .foregroundStyle(Catalyst.blue)
+                            Text("/")
+                                .scaledFont(size: 9, weight: .medium, design: .monospaced)
+                                .foregroundStyle(Catalyst.subtle)
+                            Text("\(threadCount)")
+                                .scaledFont(size: 9, weight: .medium, design: .monospaced)
+                                .foregroundStyle(Catalyst.subtle)
                         }
                     }
                 }
             }
-            .padding(.horizontal, 10)
-            .padding(.vertical, 6)
-            .background(selectedPath == file.path ? Catalyst.cyan.opacity(0.1) : Color.clear)
         }
-        .buttonStyle(.plain)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 6)
+        .contentShape(Rectangle())
+        .background(selectedPath == file.path ? Catalyst.cyan.opacity(0.1) : Color.clear)
+        .onTapGesture {
+            selectedPath = file.path
+        }
     }
 
     private func changeTypeIcon(_ status: FileChangeType) -> some View {

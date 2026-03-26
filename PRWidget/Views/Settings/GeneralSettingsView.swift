@@ -80,23 +80,6 @@ struct GeneralSettingsView: View {
             .padding(10)
             .glassCard()
 
-            // About
-            VStack(alignment: .leading, spacing: 4) {
-                SectionHeader(title: "ABOUT")
-
-                Text("P-Arr — Catalyst DevSpace")
-                    .scaledFont(size: 11, design: .monospaced)
-                    .foregroundStyle(Catalyst.foreground)
-                Text("macOS floating dashboard for GitHub PR management")
-                    .scaledFont(size: 10)
-                    .foregroundStyle(Catalyst.subtle)
-                Text(Bundle.main.fullVersion)
-                    .scaledFont(size: 10, design: .monospaced)
-                    .foregroundStyle(Catalyst.muted)
-            }
-            .padding(10)
-            .glassCard()
-
             Spacer()
         }
         .padding()

@@ -21,6 +21,7 @@ let package = Package(
             resources: [
                 .process("Resources/Assets.xcassets"),
                 .copy("Resources/CHANGELOG.md"),
+                .copy("Resources/Icons"),
             ]
         ),
     ]
