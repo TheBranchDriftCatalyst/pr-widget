@@ -35,7 +35,7 @@ targets:
         INFOPLIST_FILE: PRWidget/Resources/Info.plist
         CODE_SIGN_ENTITLEMENTS: PRWidget/Resources/PRWidget.entitlements
         PRODUCT_NAME: "P-Arr"
-        MARKETING_VERSION: "0.7.3" # Source of truth: VERSION file (synced via `task version:bump`)
+        MARKETING_VERSION: "0.7.4" # Source of truth: VERSION file (synced via `task version:bump`)
         CURRENT_PROJECT_VERSION: "1"
         CODE_SIGN_IDENTITY: "-"
         CODE_SIGN_STYLE: Automatic

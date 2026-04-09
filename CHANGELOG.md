@@ -2,6 +2,12 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.7.4] - 2026-04-09
+
+### Bug Fixes
+
+- Resolve 48s main thread hang from synchronous OSLog XPC + reduce memory footprint
+
 ## [0.7.3] - 2026-03-26
 
 ### Documentation
