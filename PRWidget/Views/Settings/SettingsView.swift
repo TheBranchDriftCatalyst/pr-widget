@@ -7,6 +7,7 @@ struct SettingsView: View {
     @Environment(HotkeyManager.self) var hotkeyManager
     @Environment(BrewSelfUpdater.self) var brewUpdater
     @Environment(LogStore.self) var logStore
+    @Environment(ResourceMonitor.self) var resourceMonitor
 
     var body: some View {
         TabView {
@@ -40,6 +41,10 @@ struct SettingsView: View {
 
             Tab("Logs", systemImage: "terminal") {
                 LogViewerView(store: logStore)
+            }
+
+            Tab("Diagnostics", systemImage: "gauge.with.dots.needle.33percent") {
+                DiagnosticsView(monitor: resourceMonitor)
             }
 
             Tab("Help", systemImage: "questionmark.circle") {
