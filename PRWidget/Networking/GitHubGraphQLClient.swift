@@ -11,15 +11,23 @@ actor GitHubGraphQLClient {
     private(set) var rateLimitRemaining: Int = 5000
     private(set) var rateLimitResetAt: Date?
 
-    private var etagCache: [String: CachedResponse] = [:]
+    private var etagCache: [String: CachedEntry] = [:]
 
     /// Maximum number of ETag cache entries before eviction kicks in.
     private let maxCacheSize = 50
 
-    private struct CachedResponse {
+    /// Directory for cached response data on disk.
+    private let cacheDirectory: URL
+
+    /// Lightweight in-memory entry — response data lives on disk.
+    private struct CachedEntry {
         let etag: String
-        let data: Data
+        let filePath: URL
         var lastAccessed: Date
+
+        func loadData() -> Data? {
+            try? Data(contentsOf: filePath)
+        }
     }
 
     init() {
@@ -28,6 +36,11 @@ actor GitHubGraphQLClient {
         config.timeoutIntervalForRequest = 30
         self.session = URLSession(configuration: config)
         self.decoder = JSONDecoder.github
+
+        // Use Caches directory — system can purge when disk is low
+        let caches = FileManager.default.urls(for: .cachesDirectory, in: .userDomainMask).first!
+        self.cacheDirectory = caches.appendingPathComponent("com.catalyst.p-arr.etag-cache", isDirectory: true)
+        try? FileManager.default.createDirectory(at: cacheDirectory, withIntermediateDirectories: true)
     }
 
     private func cacheKey(query: String, variables: [String: Any]?, endpoint: URL) -> String {
@@ -47,9 +60,18 @@ actor GitHubGraphQLClient {
         guard etagCache.count > maxCacheSize else { return }
         let oldest = etagCache.min { $0.value.lastAccessed < $1.value.lastAccessed }
         if let oldestKey = oldest?.key {
-            etagCache.removeValue(forKey: oldestKey)
+            if let entry = etagCache.removeValue(forKey: oldestKey) {
+                try? FileManager.default.removeItem(at: entry.filePath)
+            }
             NSLog("[PArr] Evicted oldest ETag cache entry (%d entries remain)", etagCache.count)
         }
+    }
+
+    /// Write response data to disk cache, returning the file URL.
+    private func writeCacheFile(key: String, data: Data) -> URL {
+        let file = cacheDirectory.appendingPathComponent(key)
+        try? data.write(to: file, options: .atomic)
+        return file
     }
 
     // MARK: - Retry Helpers
@@ -159,15 +181,17 @@ actor GitHubGraphQLClient {
         switch httpResponse.statusCode {
         case 304:
             NSLog("[PArr] ETag cache hit (304) for GraphQL request")
-            guard var cached = etagCache[key] else {
+            guard var cached = etagCache[key],
+                  let diskData = cached.loadData() else {
                 throw APIError.httpError(statusCode: 304)
             }
             cached.lastAccessed = Date()
             etagCache[key] = cached
-            responseData = cached.data
+            responseData = diskData
         case 200:
             if let etag = httpResponse.value(forHTTPHeaderField: "ETag") {
-                etagCache[key] = CachedResponse(etag: etag, data: data, lastAccessed: Date())
+                let file = writeCacheFile(key: key, data: data)
+                etagCache[key] = CachedEntry(etag: etag, filePath: file, lastAccessed: Date())
                 evictCacheIfNeeded()
                 NSLog("[PArr] Cached ETag for GraphQL request")
             }
@@ -245,15 +269,17 @@ actor GitHubGraphQLClient {
         switch httpResponse.statusCode {
         case 304:
             NSLog("[PArr] ETag cache hit (304) for REST file diffs")
-            guard var cached = etagCache[key] else {
+            guard var cached = etagCache[key],
+                  let diskData = cached.loadData() else {
                 throw APIError.httpError(statusCode: 304)
             }
             cached.lastAccessed = Date()
             etagCache[key] = cached
-            responseData = cached.data
+            responseData = diskData
         case 200:
             if let etag = httpResponse.value(forHTTPHeaderField: "ETag") {
-                etagCache[key] = CachedResponse(etag: etag, data: data, lastAccessed: Date())
+                let file = writeCacheFile(key: key, data: data)
+                etagCache[key] = CachedEntry(etag: etag, filePath: file, lastAccessed: Date())
                 evictCacheIfNeeded()
             }
             responseData = data

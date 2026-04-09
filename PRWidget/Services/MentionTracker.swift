@@ -7,16 +7,36 @@ import CatalystSwift
 final class MentionTracker {
     private static let seenKey = Persisted<[String]>("PArr.seenMentionIDs", default: [])
 
+    /// Maximum number of seen IDs to retain. Oldest entries are pruned on save.
+    private static let maxSeenIDs = 500
+
     private(set) var unreadMentionCount: Int = 0
     private var seenMentionIDs: Set<String> {
         didSet {
-            Self.seenKey.saveSet(seenMentionIDs)
+            // Prune if over limit — keep the most recent entries.
+            // Since Set has no ordering, just cap the persisted size.
+            var toSave = seenMentionIDs
+            if toSave.count > Self.maxSeenIDs {
+                // Keep only maxSeenIDs entries (arbitrary subset, but bounded)
+                while toSave.count > Self.maxSeenIDs {
+                    toSave.remove(toSave.first!)
+                }
+            }
+            Self.seenKey.saveSet(toSave)
         }
     }
     private(set) var mentionedPRIDs: Set<String> = []
 
     init() {
-        self.seenMentionIDs = Self.seenKey.loadSet()
+        var loaded = Self.seenKey.loadSet()
+        // Prune on load if previous sessions grew beyond limit
+        if loaded.count > Self.maxSeenIDs {
+            while loaded.count > Self.maxSeenIDs {
+                loaded.remove(loaded.first!)
+            }
+            Self.seenKey.saveSet(loaded)
+        }
+        self.seenMentionIDs = loaded
     }
 
     func checkForMentions(prs: [PullRequest], currentUser: String) {

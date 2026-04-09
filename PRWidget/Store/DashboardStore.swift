@@ -79,7 +79,15 @@ final class DashboardStore {
 
     private let accountManager: AccountManager
     private let client = GitHubGraphQLClient()
+
+    /// LRU file diff cache — capped at 15 PRs to bound memory.
+    private static let maxDiffCacheSize = 15
     private var fileDiffCache: [String: [PRFileDiff]] = [:]
+    private var diffCacheOrder: [String] = []  // oldest first
+
+    /// Track which PR details are loaded, evict oldest when over limit.
+    private static let maxLoadedDetails = 10
+    private var detailAccessOrder: [String] = []
 
     init(accountManager: AccountManager) {
         self.accountManager = accountManager
@@ -315,6 +323,7 @@ final class DashboardStore {
 
         // Invalidate file diff cache on refresh — PRs may have new commits
         fileDiffCache.removeAll()
+        diffCacheOrder.removeAll()
 
         var allPRs: [PullRequest] = []
         var currentUser = ""
@@ -384,7 +393,12 @@ final class DashboardStore {
     // MARK: - Fetch Detail (B1 account lookup, B5 error propagation)
 
     func fetchDetail(for pr: PullRequest, force: Bool = false) async throws -> PRDetail {
-        if !force, let existing = pr.detail { return existing }
+        if !force, let existing = pr.detail {
+            // Move to end of access order (most recently used)
+            detailAccessOrder.removeAll { $0 == pr.id }
+            detailAccessOrder.append(pr.id)
+            return existing
+        }
 
         guard let account = account(for: pr),
               let token = accountManager.token(for: account) else {
@@ -403,6 +417,17 @@ final class DashboardStore {
         if let index = state.pullRequests.firstIndex(where: { $0.id == pr.id }) {
             state.pullRequests[index].detail = detail
         }
+
+        // Track access order and evict oldest details to bound memory
+        detailAccessOrder.removeAll { $0 == pr.id }
+        detailAccessOrder.append(pr.id)
+        while detailAccessOrder.count > Self.maxLoadedDetails {
+            let evictedID = detailAccessOrder.removeFirst()
+            if let index = state.pullRequests.firstIndex(where: { $0.id == evictedID }) {
+                state.pullRequests[index].detail = nil
+            }
+        }
+
         return detail
     }
 
@@ -446,6 +471,18 @@ final class DashboardStore {
             )
         }
 
+        // LRU eviction: remove oldest entry if at capacity
+        if fileDiffCache[pr.id] == nil {
+            diffCacheOrder.append(pr.id)
+            while diffCacheOrder.count > Self.maxDiffCacheSize {
+                let evicted = diffCacheOrder.removeFirst()
+                fileDiffCache.removeValue(forKey: evicted)
+            }
+        } else {
+            // Move to end (most recently used)
+            diffCacheOrder.removeAll { $0 == pr.id }
+            diffCacheOrder.append(pr.id)
+        }
         fileDiffCache[pr.id] = diffs
         return diffs
     }

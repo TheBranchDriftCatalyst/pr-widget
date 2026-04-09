@@ -1,8 +1,7 @@
 version: "0.1.1"
 name: "pr-widget"
-description: "Native macOS floating dashboard for GitHub PR management with urgency scoring and quick actions"
+description: "Native macOS menu bar app for GitHub PR management — floating NSPanel dashboard with urgency scoring, inline diff viewer, quick review actions, and AI-powered PR synopses"
 repo_url: "https://github.com/TheBranchDriftCatalyst/pr-widget"
-
 status: "active"
 
 tech_stack:
@@ -15,15 +14,22 @@ tech_stack:
     - "spm"
     - "xcodegen"
     - "github-graphql"
+    - "homebrew-cask"
+    - "git-cliff"
 
 groups:
   - "developer-tools"
+  - "macos-native"
 
 badges:
   stars: true
   issues: true
+  prs: true
+  license: true
 
 highlights:
-  - "Floating NSPanel stays visible across all Spaces"
-  - "Smart urgency scoring for PR prioritization"
-  - "Direct approve/merge/request-changes from widget"
+  - "LSUIElement menu bar app with NSPanel floating window (statusBar level, canJoinAllSpaces) anchored below status item with neon glow pulse via Core Animation"
+  - "Carbon Events API global hotkey (Cmd+Shift+Option+P) registers system-wide via RegisterEventHotKey with user-customizable key combos"
+  - "GitHub GraphQL v4 client with ETag-based conditional requests, SHA256 cache keys, LRU eviction, and exponential backoff with Retry-After"
+  - "macOS Keychain Services integration storing GitHub PATs per-account with kSecAttrAccessibleWhenUnlockedThisDeviceOnly"
+  - "Full Homebrew Cask distribution pipeline — task ship automates version bump, git-cliff changelog, release build, .app bundling, SHA256 cask update, and GitHub release"

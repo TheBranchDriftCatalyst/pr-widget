@@ -35,7 +35,7 @@ public struct LogViewerView: View {
             Divider().opacity(0.3)
             logContent
         }
-        .task { store.refresh() }
+        .task { await store.refresh() }
     }
 
     private var toolbar: some View {
@@ -64,12 +64,18 @@ public struct LogViewerView: View {
                 .toggleStyle(.switch)
                 .controlSize(.mini)
 
+            if store.isLoading {
+                ProgressView()
+                    .controlSize(.small)
+            }
+
             Button {
-                store.refresh()
+                Task { await store.refresh() }
             } label: {
                 Image(systemName: "arrow.clockwise")
             }
             .buttonStyle(.borderless)
+            .disabled(store.isLoading)
             .help("Refresh logs")
 
             Button {
