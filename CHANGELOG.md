@@ -2,6 +2,12 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [0.7.5] - 2026-04-09
+
+### Features
+
+- Add diagnostics settings tab with live resource monitor and CPU sampling
+
 ## [0.7.4] - 2026-04-09
 
 ### Bug Fixes
