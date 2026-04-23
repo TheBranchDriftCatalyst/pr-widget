@@ -330,115 +330,137 @@ struct PRRowContent: View {
         pr.author.login == store.state.currentUser
     }
 
+    // MARK: - Icon Stack
+
+    @ViewBuilder
+    private var iconStack: some View {
+        VStack(spacing: 3) {
+            if isOwnedByMe {
+                Image(systemName: "crown.fill")
+                    .scaledFont(size: 10)
+                    .foregroundStyle(Catalyst.yellow)
+            }
+            if pr.isDraft {
+                Image(systemName: "doc.text.fill")
+                    .scaledFont(size: 10)
+                    .foregroundStyle(Catalyst.subtle)
+            }
+            if isPinned {
+                Image(systemName: "pin.fill")
+                    .scaledFont(size: 9)
+                    .foregroundStyle(Catalyst.yellow)
+            }
+        }
+        .frame(width: 16, alignment: .center)
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             GradientAccentStripe(color: accentColor(for: pr))
 
-            VStack(alignment: .leading, spacing: 4) {
-                // Line 1: Title row with CI status + comment count
-                HStack(alignment: .top, spacing: 6) {
-                    if pr.isDraft {
-                        Image(systemName: "doc")
+            HStack(alignment: .top, spacing: 6) {
+                iconStack
+
+                VStack(alignment: .leading, spacing: 3) {
+                    // Line 1: Repo header + comment count
+                    HStack(spacing: 0) {
+                        Text(pr.repository.nameWithOwner)
+                            .scaledFont(size: 11, weight: .semibold, design: .monospaced)
+                            .foregroundStyle(Catalyst.muted)
+
+                        Spacer()
+
+                        if pr.commentCount > 0 {
+                            HStack(spacing: 3) {
+                                Image(systemName: "text.bubble")
+                                Text("\(pr.commentCount)")
+                            }
                             .scaledFont(size: 11)
+                            .foregroundStyle(Catalyst.muted)
+                        }
+                    }
+
+                    // Line 2: Title + CI status
+                    HStack(spacing: 5) {
+                        Text(pr.title)
+                            .scaledFont(size: 14, weight: .medium)
+                            .foregroundStyle(Catalyst.foreground)
+                            .lineLimit(2)
+
+                        StatusBadge(status: pr.statusCheckRollup)
+                    }
+
+                    // Line 3: Metadata
+                    HStack(spacing: 4) {
+                        Text("#\(pr.number)")
+                            .foregroundStyle(Catalyst.muted)
+
+                        Text("·")
                             .foregroundStyle(Catalyst.subtle)
+
+                        Text("\(pr.createdAt, style: .relative) ago")
+                            .foregroundStyle(Catalyst.muted)
+
+                        Text("·")
+                            .foregroundStyle(Catalyst.subtle)
+
+                        Text("by \(pr.author.login)")
+                            .foregroundStyle(Catalyst.muted)
+
+                        if pr.isDraft {
+                            Text("·")
+                                .foregroundStyle(Catalyst.subtle)
+                            Text("Draft")
+                                .foregroundStyle(Catalyst.subtle)
+                        } else if pr.reviewDecision == .reviewRequired {
+                            Text("·")
+                                .foregroundStyle(Catalyst.subtle)
+                            Text("Review required")
+                                .foregroundStyle(Catalyst.subtle)
+                        }
+
+                        if let progress = pr.taskProgress {
+                            Text("·")
+                                .foregroundStyle(Catalyst.subtle)
+                            TaskProgressView(progress: progress)
+                        }
                     }
+                    .scaledFont(size: 11)
 
-                    if isPinned {
-                        Image(systemName: "pin.fill")
-                            .scaledFont(size: 9)
-                            .foregroundStyle(Catalyst.yellow)
-                    }
-
-                    if isOwnedByMe {
-                        Text("👑")
-                            .scaledFont(size: 10)
-                    }
-
-                    VStack(alignment: .leading, spacing: 2) {
-                        HStack(spacing: 4) {
-                            Text(pr.repository.nameWithOwner)
-                                .scaledFont(size: 11, weight: .semibold)
-                                .foregroundStyle(Catalyst.muted)
-
-                            Text(pr.title)
-                                .scaledFont(size: 14, weight: .medium)
-                                .foregroundStyle(Catalyst.foreground)
-                                .lineLimit(2)
-
-                            StatusBadge(status: pr.statusCheckRollup)
-
-                            if !pr.labels.isEmpty {
-                                ForEach(pr.labels.prefix(5)) { label in
+                    // Line 4: Labels (own row, horizontally scrollable)
+                    if !pr.labels.isEmpty {
+                        ScrollView(.horizontal, showsIndicators: false) {
+                            HStack(spacing: 4) {
+                                ForEach(pr.labels) { label in
                                     LabelPill(label: label)
                                 }
                             }
                         }
+                    }
 
-                        // Line 2: Metadata line matching GitHub format
-                        HStack(spacing: 4) {
-                            Text("#\(pr.number)")
-                                .foregroundStyle(Catalyst.muted)
+                    // Line 5: Review status + changes + urgency
+                    HStack(spacing: 8) {
+                        ReviewAvatars(reviews: pr.reviews, reviewRequests: pr.reviewRequests)
+                        myReviewBadge
 
-                            Text("opened \(pr.createdAt, style: .relative) ago")
-                                .foregroundStyle(Catalyst.muted)
-
-                            Text("by \(pr.author.login)")
-                                .foregroundStyle(Catalyst.muted)
-
-                            if pr.isDraft {
-                                Text("•")
-                                    .foregroundStyle(Catalyst.subtle)
-                                Text("Draft")
-                                    .foregroundStyle(Catalyst.subtle)
-                            } else if pr.reviewDecision == .reviewRequired {
-                                Text("•")
-                                    .foregroundStyle(Catalyst.subtle)
-                                Text("Review required")
-                                    .foregroundStyle(Catalyst.subtle)
-                            }
-
-                            if let progress = pr.taskProgress {
-                                TaskProgressView(progress: progress)
-                            }
+                        if pr.mergeable == .conflicting {
+                            Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
+                                .scaledFont(size: 11)
+                                .foregroundStyle(Catalyst.warning)
                         }
-                        .scaledFont(size: 11)
-                    }
 
-                    Spacer()
+                        Spacer()
 
-                    // Comment count
-                    if pr.commentCount > 0 {
-                        HStack(spacing: 3) {
-                            Image(systemName: "text.bubble")
-                            Text("\(pr.commentCount)")
+                        HStack(spacing: 2) {
+                            Text("+\(pr.additions)")
+                                .foregroundStyle(Catalyst.cyan)
+                            Text("-\(pr.deletions)")
+                                .foregroundStyle(Catalyst.red)
                         }
-                        .scaledFont(size: 11)
-                        .foregroundStyle(Catalyst.muted)
+                        .scaledFont(size: 11, design: .monospaced)
+
+                        UrgencyBadge(ageText: pr.ageText, urgencyScore: pr.urgencyScore)
                     }
-                }
-
-                // Line 3: Review status row
-                HStack(spacing: 8) {
-                    ReviewAvatars(reviews: pr.reviews, reviewRequests: pr.reviewRequests)
-                    myReviewBadge
-
-                    if pr.mergeable == .conflicting {
-                        Label("Conflicts", systemImage: "exclamationmark.triangle.fill")
-                            .scaledFont(size: 11)
-                            .foregroundStyle(Catalyst.warning)
-                    }
-
-                    Spacer()
-
-                    HStack(spacing: 2) {
-                        Text("+\(pr.additions)")
-                            .foregroundStyle(Catalyst.cyan)
-                        Text("-\(pr.deletions)")
-                            .foregroundStyle(Catalyst.red)
-                    }
-                    .scaledFont(size: 11, design: .monospaced)
-
-                    UrgencyBadge(ageText: pr.ageText, urgencyScore: pr.urgencyScore)
                 }
             }
             .padding(.horizontal, 12)

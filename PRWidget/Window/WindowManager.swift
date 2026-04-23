@@ -29,7 +29,7 @@ final class WindowManager {
 
         panel.level = isPinned ? .statusBar : .normal
         panel.minSize = NSSize(width: 380, height: 300)
-        panel.maxSize = NSSize(width: 600, height: 900)
+        panel.maxSize = NSSize(width: 1200, height: 900)
 
         let hostingView = NSHostingView(
             rootView: contentView.clipShape(.rect(cornerRadius: Catalyst.radiusMD))
