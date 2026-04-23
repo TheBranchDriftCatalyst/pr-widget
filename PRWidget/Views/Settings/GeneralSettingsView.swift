@@ -5,15 +5,77 @@ import CatalystSwift
 struct GeneralSettingsView: View {
     @Environment(HotkeyManager.self) var hotkeyManager
     @Environment(IconThemeManager.self) var iconManager
+    @Environment(PollingScheduler.self) var pollingScheduler
     @AppStorage("PArr.ui.textScale") private var textScale: Double = 1.0
     @AppStorage("PArr.mergeEnabled") private var mergeEnabled: Bool = true
     @State private var isRecording = false
     @State private var pendingCombo: HotkeyCombo?
 
+    private static let intervalOptions: [(String, TimeInterval)] = [
+        ("10s", 10),
+        ("30s", 30),
+        ("1 min", 60),
+        ("2 min", 120),
+        ("5 min", 300),
+        ("10 min", 600),
+    ]
+
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
             // Icon theme section
             IconThemePickerView(manager: iconManager)
+
+            // Polling / refresh section
+            VStack(alignment: .leading, spacing: 8) {
+                SectionHeader(title: "AUTO-REFRESH")
+
+                @Bindable var scheduler = pollingScheduler
+
+                Toggle(isOn: Binding(
+                    get: { scheduler.isEnabled },
+                    set: { scheduler.isEnabled = $0 }
+                )) {
+                    Text("Auto-refresh dashboard")
+                        .scaledFont(size: 12, design: .monospaced)
+                        .foregroundStyle(Catalyst.foreground)
+                }
+                .toggleStyle(.switch)
+                .tint(Catalyst.cyan)
+
+                if scheduler.isEnabled {
+                    HStack(spacing: 10) {
+                        Text("Refresh every")
+                            .scaledFont(size: 12, design: .monospaced)
+                            .foregroundStyle(Catalyst.foreground)
+
+                        Picker("", selection: Binding(
+                            get: { scheduler.interval },
+                            set: { scheduler.interval = $0 }
+                        )) {
+                            ForEach(Self.intervalOptions, id: \.1) { label, value in
+                                Text(label).tag(value)
+                            }
+                        }
+                        .pickerStyle(.segmented)
+
+                        Spacer()
+                    }
+
+                    HStack(spacing: 4) {
+                        Text("GitHub allows ~5,000 points/hr. Each refresh ≈ 2 points. At 10s you use ~720 pts/hr (14%).")
+                            .scaledFont(size: 10)
+                            .foregroundStyle(Catalyst.subtle)
+
+                        Link(destination: URL(string: "https://docs.github.com/en/graphql/overview/rate-limits-and-query-limits-for-the-graphql-api")!) {
+                            Text("Learn more")
+                                .scaledFont(size: 10)
+                                .foregroundStyle(Catalyst.cyan)
+                        }
+                    }
+                }
+            }
+            .padding(10)
+            .glassCard()
 
             // Hotkey section
             VStack(alignment: .leading, spacing: 8) {

@@ -6,7 +6,7 @@ import CatalystSwift
 @Observable
 final class PollingScheduler {
     private enum Keys {
-        static let interval = Persisted<Double>("PArr.pollInterval", default: 120)
+        static let interval = Persisted<Double>("PArr.pollInterval", default: 10)
         static let isEnabled = Persisted<Bool>("PArr.pollEnabled", default: true)
     }
 

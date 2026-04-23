@@ -45,6 +45,7 @@ struct PRNode: Decodable {
     let number: Int
     let title: String
     let url: String
+    let body: String?
     let state: String
     let isDraft: Bool
     let createdAt: String
@@ -57,11 +58,16 @@ struct PRNode: Decodable {
     let baseRefName: String
     let author: UserNode?
     let repository: RepositoryNode
+    let comments: CommentCountConnection
     let commits: CommitsConnection
     let reviews: ReviewsConnection
     let labels: LabelsConnection
     let assignees: UsersConnection
     let reviewRequests: ReviewRequestsConnection
+}
+
+struct CommentCountConnection: Decodable {
+    let totalCount: Int
 }
 
 struct UserNode: Decodable {
@@ -469,6 +475,16 @@ extension PRNode {
             }
         }()
 
+        // Parse task progress from PR body markdown (- [ ] and - [x] checkboxes)
+        let taskProgress: TaskProgress? = {
+            guard let body else { return nil }
+            let totalPattern = /- \[([ x])\]/
+            let matches = body.matches(of: totalPattern)
+            guard !matches.isEmpty else { return nil }
+            let completed = matches.filter { $0.output.1 == "x" }.count
+            return TaskProgress(completed: completed, total: matches.count)
+        }()
+
         return PullRequest(
             id: id,
             number: number,
@@ -493,7 +509,9 @@ extension PRNode {
             reviewRequests: reviewRequests.nodes.compactMap { node in
                 guard let reviewer = node.requestedReviewer else { return nil }
                 return PRUser(login: reviewer.login, avatarURL: reviewer.avatarUrl.flatMap(URL.init))
-            }
+            },
+            commentCount: comments.totalCount,
+            taskProgress: taskProgress
         )
     }
 }

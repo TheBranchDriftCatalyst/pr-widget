@@ -1,5 +1,10 @@
 import Foundation
 
+struct TaskProgress: Sendable, Hashable {
+    let completed: Int
+    let total: Int
+}
+
 struct PullRequest: Identifiable, Sendable {
     let id: String
     let number: Int
@@ -22,6 +27,8 @@ struct PullRequest: Identifiable, Sendable {
     var labels: [PRLabel]
     let assignees: [PRUser]
     let reviewRequests: [PRUser]
+    let commentCount: Int
+    let taskProgress: TaskProgress?
     var detail: PRDetail?
     /// The UUID of the GitHubAccount that fetched this PR (for multi-account support).
     var sourceAccountID: UUID?

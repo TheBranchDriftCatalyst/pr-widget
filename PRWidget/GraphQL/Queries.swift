@@ -37,6 +37,7 @@ enum GitHubQueries {
         number
         title
         url
+        body
         state
         isDraft
         createdAt
@@ -54,6 +55,9 @@ enum GitHubQueries {
         repository {
             nameWithOwner
             url
+        }
+        comments {
+            totalCount
         }
         commits(last: 1) {
             nodes {

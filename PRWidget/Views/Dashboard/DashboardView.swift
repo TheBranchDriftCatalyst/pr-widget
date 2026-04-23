@@ -326,11 +326,16 @@ struct PRRowContent: View {
     @Environment(AccountManager.self) private var accountManager
     @Environment(DashboardStore.self) private var store
 
+    private var isOwnedByMe: Bool {
+        pr.author.login == store.state.currentUser
+    }
+
     var body: some View {
         HStack(spacing: 0) {
             GradientAccentStripe(color: accentColor(for: pr))
 
             VStack(alignment: .leading, spacing: 4) {
+                // Line 1: Title row with CI status + comment count
                 HStack(alignment: .top, spacing: 6) {
                     if pr.isDraft {
                         Image(systemName: "doc")
@@ -344,24 +349,76 @@ struct PRRowContent: View {
                             .foregroundStyle(Catalyst.yellow)
                     }
 
-                    VStack(alignment: .leading, spacing: 2) {
-                        Text(pr.title)
-                            .scaledFont(size: 14, weight: .medium)
-                            .foregroundStyle(Catalyst.foreground)
-                            .lineLimit(2)
+                    if isOwnedByMe {
+                        Text("👑")
+                            .scaledFont(size: 10)
+                    }
 
-                        Text("\(pr.repository.nameWithOwner) #\(pr.number)")
-                            .scaledFont(size: 11, design: .monospaced)
-                            .foregroundStyle(Catalyst.muted)
+                    VStack(alignment: .leading, spacing: 2) {
+                        HStack(spacing: 4) {
+                            Text(pr.repository.nameWithOwner)
+                                .scaledFont(size: 11, weight: .semibold)
+                                .foregroundStyle(Catalyst.muted)
+
+                            Text(pr.title)
+                                .scaledFont(size: 14, weight: .medium)
+                                .foregroundStyle(Catalyst.foreground)
+                                .lineLimit(2)
+
+                            StatusBadge(status: pr.statusCheckRollup)
+
+                            if !pr.labels.isEmpty {
+                                ForEach(pr.labels.prefix(5)) { label in
+                                    LabelPill(label: label)
+                                }
+                            }
+                        }
+
+                        // Line 2: Metadata line matching GitHub format
+                        HStack(spacing: 4) {
+                            Text("#\(pr.number)")
+                                .foregroundStyle(Catalyst.muted)
+
+                            Text("opened \(pr.createdAt, style: .relative) ago")
+                                .foregroundStyle(Catalyst.muted)
+
+                            Text("by \(pr.author.login)")
+                                .foregroundStyle(Catalyst.muted)
+
+                            if pr.isDraft {
+                                Text("•")
+                                    .foregroundStyle(Catalyst.subtle)
+                                Text("Draft")
+                                    .foregroundStyle(Catalyst.subtle)
+                            } else if pr.reviewDecision == .reviewRequired {
+                                Text("•")
+                                    .foregroundStyle(Catalyst.subtle)
+                                Text("Review required")
+                                    .foregroundStyle(Catalyst.subtle)
+                            }
+
+                            if let progress = pr.taskProgress {
+                                TaskProgressView(progress: progress)
+                            }
+                        }
+                        .scaledFont(size: 11)
                     }
 
                     Spacer()
 
-                    UrgencyBadge(ageText: pr.ageText, urgencyScore: pr.urgencyScore)
+                    // Comment count
+                    if pr.commentCount > 0 {
+                        HStack(spacing: 3) {
+                            Image(systemName: "text.bubble")
+                            Text("\(pr.commentCount)")
+                        }
+                        .scaledFont(size: 11)
+                        .foregroundStyle(Catalyst.muted)
+                    }
                 }
 
+                // Line 3: Review status row
                 HStack(spacing: 8) {
-                    StatusBadge(status: pr.statusCheckRollup)
                     ReviewAvatars(reviews: pr.reviews, reviewRequests: pr.reviewRequests)
                     myReviewBadge
 
@@ -380,14 +437,8 @@ struct PRRowContent: View {
                             .foregroundStyle(Catalyst.red)
                     }
                     .scaledFont(size: 11, design: .monospaced)
-                }
 
-                if !pr.labels.isEmpty {
-                    HStack(spacing: 4) {
-                        ForEach(pr.labels.prefix(5)) { label in
-                            LabelPill(label: label)
-                        }
-                    }
+                    UrgencyBadge(ageText: pr.ageText, urgencyScore: pr.urgencyScore)
                 }
             }
             .padding(.horizontal, 12)
@@ -403,11 +454,24 @@ struct PRRowContent: View {
             Button("Open in Browser") {
                 NSWorkspace.shared.open(pr.url)
             }
+            Button("Open Repo") {
+                NSWorkspace.shared.open(pr.repository.url)
+            }
+            if let tasksURL = URL(string: "\(pr.url.absoluteString)/checks") {
+                Button("Open Checks") {
+                    NSWorkspace.shared.open(tasksURL)
+                }
+            }
+            if let projectsURL = URL(string: "\(pr.repository.url.absoluteString)/projects") {
+                Button("Open Project Board") {
+                    NSWorkspace.shared.open(projectsURL)
+                }
+            }
+            Divider()
             Button("Copy URL") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(pr.url.absoluteString, forType: .string)
             }
-            Divider()
             Button("Copy Branch Name") {
                 NSPasteboard.general.clearContents()
                 NSPasteboard.general.setString(pr.headRefName, forType: .string)
@@ -472,5 +536,29 @@ struct PRRowContent: View {
             return Catalyst.needsAction
         }
         return Catalyst.waiting
+    }
+}
+
+// MARK: - Task Progress View
+
+struct TaskProgressView: View {
+    let progress: TaskProgress
+
+    var body: some View {
+        HStack(spacing: 4) {
+            Circle()
+                .trim(from: 0, to: progress.total > 0 ? CGFloat(progress.completed) / CGFloat(progress.total) : 0)
+                .stroke(Catalyst.muted, lineWidth: 1.5)
+                .frame(width: 10, height: 10)
+                .rotationEffect(.degrees(-90))
+                .overlay(
+                    Circle()
+                        .stroke(Catalyst.subtle.opacity(0.3), lineWidth: 1.5)
+                )
+
+            Text("\(progress.completed) of \(progress.total) tasks")
+                .foregroundStyle(Catalyst.muted)
+        }
+        .scaledFont(size: 11)
     }
 }

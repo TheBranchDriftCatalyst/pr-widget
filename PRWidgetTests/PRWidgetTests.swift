@@ -266,7 +266,9 @@ private func makePR(
         reviews: reviews,
         labels: [],
         assignees: [],
-        reviewRequests: reviewRequests
+        reviewRequests: reviewRequests,
+        commentCount: 0,
+        taskProgress: nil
     )
 }
 
