@@ -2,6 +2,12 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [1.1.1] - 2026-04-23
+
+### Bug Fixes
+
+- Improve PR row layout with icon stack, scrollable labels, and wider window support
+
 ## [1.1.0] - 2026-04-23
 
 ### Features
