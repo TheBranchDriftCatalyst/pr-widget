@@ -2,6 +2,12 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [1.2.1] - 2026-04-30
+
+### Bug Fixes
+
+- Add action feedback, DRY refactor, accessibility, and TelemetryDeck analytics
+
 ## [1.2.0] - 2026-04-30
 
 ### Features
