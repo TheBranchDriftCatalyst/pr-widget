@@ -1,5 +1,6 @@
 import SwiftUI
 import CatalystSwift
+import TelemetryDeck
 
 struct SettingsView: View {
     @Environment(AccountManager.self) var accountManager
@@ -59,5 +60,6 @@ struct SettingsView: View {
         .frame(minWidth: 520, idealWidth: 600, maxWidth: 900, minHeight: 500, idealHeight: 620, maxHeight: 900)
         .background(Catalyst.background)
         .foregroundStyle(Catalyst.foreground)
+        .trackNavigation(path: "settings")
     }
 }

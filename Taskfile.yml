@@ -48,6 +48,8 @@ tasks:
         # Kill existing instance
         pkill -x PArr 2>/dev/null || true
         sleep 0.3
+        # Clear quarantine flag so macOS doesn't block unsigned app
+        xattr -cr "{{.APP_PATH}}" 2>/dev/null || true
         open "{{.APP_PATH}}"
         echo "✅ P-Arr launched"
 

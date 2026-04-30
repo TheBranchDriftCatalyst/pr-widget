@@ -9,12 +9,14 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "catalyst-swift", path: "catalyst-lib"),
+        .package(url: "https://github.com/TelemetryDeck/SwiftSDK", from: "2.0.0"),
     ],
     targets: [
         .executableTarget(
             name: "PArr",
             dependencies: [
                 .product(name: "CatalystSwift", package: "catalyst-swift"),
+                .product(name: "TelemetryDeck", package: "SwiftSDK"),
             ],
             path: "PRWidget",
             exclude: ["Resources/Info.plist", "Resources/PRWidget.entitlements"],

@@ -434,6 +434,106 @@ struct AddReviewThreadReplyPayload: Decodable {
     let comment: ReviewThreadCommentNode
 }
 
+// MARK: - Branch List Response
+
+struct BranchListResponse: Decodable {
+    let repository: BranchRepositoryNode?
+}
+
+struct BranchRepositoryNode: Decodable {
+    let defaultBranchRef: DefaultBranchRefNode?
+    let refs: BranchRefsConnection
+}
+
+struct DefaultBranchRefNode: Decodable {
+    let name: String
+}
+
+struct BranchRefsConnection: Decodable {
+    let pageInfo: BranchPageInfo
+    let nodes: [BranchRefNode]
+}
+
+struct BranchPageInfo: Decodable {
+    let hasNextPage: Bool
+    let endCursor: String?
+}
+
+struct BranchRefNode: Decodable {
+    let id: String
+    let name: String
+    let target: BranchTargetNode?
+    let associatedPullRequests: BranchPRConnection
+}
+
+struct BranchTargetNode: Decodable {
+    let oid: String?
+    let committedDate: String?
+    let author: BranchCommitAuthorNode?
+}
+
+struct BranchCommitAuthorNode: Decodable {
+    let user: UserNode?
+    let name: String?
+}
+
+struct BranchPRConnection: Decodable {
+    let nodes: [BranchPRNode]
+}
+
+struct BranchPRNode: Decodable {
+    let number: Int
+    let url: String
+    let state: String
+    let baseRefName: String
+}
+
+// MARK: - Repository Search Response
+
+struct RepoSearchResponse: Decodable {
+    let search: RepoSearchResultConnection
+}
+
+struct RepoSearchResultConnection: Decodable {
+    let nodes: [RepoSearchNode?]
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        var nodesContainer = try container.nestedUnkeyedContainer(forKey: .nodes)
+        var decoded: [RepoSearchNode?] = []
+        while !nodesContainer.isAtEnd {
+            if let node = try? nodesContainer.decode(RepoSearchNode.self) {
+                decoded.append(node)
+            } else {
+                _ = try? nodesContainer.decode(AnyCodableSkip.self)
+            }
+        }
+        self.nodes = decoded
+    }
+
+    private enum CodingKeys: String, CodingKey {
+        case nodes
+    }
+}
+
+struct RepoSearchNode: Decodable {
+    let nameWithOwner: String?
+    let url: String?
+    let description: String?
+    let stargazerCount: Int?
+    let isArchived: Bool?
+}
+
+// MARK: - Delete Ref Response
+
+struct DeleteRefResponse: Decodable {
+    let deleteRef: DeleteRefPayload
+}
+
+struct DeleteRefPayload: Decodable {
+    let clientMutationId: String?
+}
+
 // MARK: - Mapping to Domain Models
 
 extension PRNode {

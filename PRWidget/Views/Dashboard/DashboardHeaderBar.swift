@@ -13,6 +13,7 @@ struct DashboardHeaderBar: View {
     let readyToShip: Int
     let onRefresh: () -> Void
     let onTogglePin: () -> Void
+    let onOpenBranchCleanup: () -> Void
     let onOpenSettings: () -> Void
 
     private var intervalLabel: String {
@@ -98,6 +99,13 @@ struct DashboardHeaderBar: View {
             .buttonStyle(.borderless)
             .accessibilityIdentifier(AccessibilityID.pinButton)
             .catalystTooltip(isPinned ? "Unpin window" : "Pin window on top")
+
+            Button(action: onOpenBranchCleanup) {
+                Image(systemName: "arrow.triangle.branch")
+                    .foregroundStyle(Catalyst.muted)
+            }
+            .buttonStyle(.borderless)
+            .catalystTooltip("Branch Cleanup")
 
             Button(action: onOpenSettings) {
                 ZStack(alignment: .topTrailing) {

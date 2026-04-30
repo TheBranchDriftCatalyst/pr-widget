@@ -64,6 +64,14 @@ enum GitHubMutations {
     }
     """
 
+    static let deleteRef = """
+    mutation DeleteRef($refId: ID!) {
+        deleteRef(input: {refId: $refId}) {
+            clientMutationId
+        }
+    }
+    """
+
     static let addReviewThreadReply = """
     mutation AddReviewThreadReply($threadId: ID!, $body: String!) {
         addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {

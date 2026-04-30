@@ -1,6 +1,7 @@
 import Foundation
 import Observation
 import CatalystSwift
+import TelemetryDeck
 
 @MainActor
 @Observable
@@ -19,6 +20,7 @@ final class DashboardStore {
     var state = DashboardState()
     var activeFilter: PRFilter = .all {
         didSet {
+            NSLog("[PArr] Filter changed to '%@'", activeFilter.rawValue)
             Keys.activeFilter.save(activeFilter.rawValue)
             recomputeFilteredResults()
         }
@@ -317,7 +319,11 @@ final class DashboardStore {
     // MARK: - Refresh (B1 multi-account, B4 partial failure)
 
     func refresh() async {
-        guard !state.isLoading else { return }
+        guard !state.isLoading else {
+            NSLog("[PArr] Refresh skipped — already loading")
+            return
+        }
+        NSLog("[PArr] Refresh started for %d account(s)", accountManager.accounts.count)
         state.isLoading = true
         state.error = nil
 
@@ -356,6 +362,7 @@ final class DashboardStore {
                     }
                 }
             } catch {
+                NSLog("[PArr] ❌ Refresh failed for account '%@': %@", account.displayName, error.localizedDescription)
                 errors.append("\(account.displayName): \(error.localizedDescription)")
                 failedAccountIDs.insert(account.id)
             }
@@ -363,6 +370,7 @@ final class DashboardStore {
 
         // Partial failure handling (B4): preserve existing PRs from failed accounts
         if !failedAccountIDs.isEmpty {
+            NSLog("[PArr] ⚠️ Partial failure: %d account(s) failed, preserving their cached PRs", failedAccountIDs.count)
             let preservedPRs = state.pullRequests.filter { pr in
                 guard let sourceID = pr.sourceAccountID else { return false }
                 return failedAccountIDs.contains(sourceID)
@@ -385,6 +393,12 @@ final class DashboardStore {
         newState.categorize()
         state = newState
 
+        NSLog("[PArr] ✓ Refresh complete — %d PRs total, user: %@", allPRs.count, currentUser)
+        TelemetryDeck.signal("dashboardRefreshed", parameters: ["prCount": "\(allPRs.count)"])
+        if !errors.isEmpty {
+            NSLog("[PArr] ⚠️ Refresh had %d error(s)", errors.count)
+        }
+
         // Recompute all cached derived data
         recomputeAvailableLists()
         recomputeFilteredResults()
@@ -400,8 +414,11 @@ final class DashboardStore {
             return existing
         }
 
+        NSLog("[PArr] Fetching detail for PR #%d (%@)%@", pr.number, pr.repository.nameWithOwner, force ? " [forced]" : "")
+
         guard let account = account(for: pr),
               let token = accountManager.token(for: account) else {
+            NSLog("[PArr] ❌ No token available for PR #%d detail fetch", pr.number)
             throw APIError.noToken
         }
 
@@ -425,19 +442,27 @@ final class DashboardStore {
             let evictedID = detailAccessOrder.removeFirst()
             if let index = state.pullRequests.firstIndex(where: { $0.id == evictedID }) {
                 state.pullRequests[index].detail = nil
+                NSLog("[PArr] Evicted detail cache for PR %@ (%d loaded)", evictedID, detailAccessOrder.count)
             }
         }
 
+        NSLog("[PArr] ✓ Detail loaded for PR #%d — %d comments, %d commits, %d check runs", pr.number, detail.comments.count, detail.commits.count, detail.checkRuns.count)
         return detail
     }
 
     // MARK: - Fetch File Diffs (B1 account lookup)
 
     func fetchFileDiffs(for pr: PullRequest, force: Bool = false) async throws -> [PRFileDiff] {
-        if !force, let cached = fileDiffCache[pr.id] { return cached }
+        if !force, let cached = fileDiffCache[pr.id] {
+            NSLog("[PArr] File diff cache hit for PR #%d (%d files)", pr.number, cached.count)
+            return cached
+        }
+
+        NSLog("[PArr] Fetching file diffs for PR #%d (%@)%@", pr.number, pr.repository.nameWithOwner, force ? " [forced]" : "")
 
         guard let account = account(for: pr),
               let token = accountManager.token(for: account) else {
+            NSLog("[PArr] ❌ No token available for PR #%d file diff fetch", pr.number)
             throw APIError.noToken
         }
 
@@ -484,6 +509,7 @@ final class DashboardStore {
             diffCacheOrder.append(pr.id)
         }
         fileDiffCache[pr.id] = diffs
+        NSLog("[PArr] ✓ File diffs loaded for PR #%d — %d files (+%d/-%d)", pr.number, diffs.count, diffs.reduce(0) { $0 + $1.additions }, diffs.reduce(0) { $0 + $1.deletions })
         return diffs
     }
 

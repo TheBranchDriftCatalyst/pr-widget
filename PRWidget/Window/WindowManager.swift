@@ -90,6 +90,7 @@ final class WindowManager {
 
     func show(relativeTo statusItem: NSStatusItem?) {
         guard panel != nil else { return }
+        NSLog("[PArr] Showing main panel")
         positionBelow(statusItem)
 
         if NSWorkspace.shared.accessibilityDisplayShouldReduceMotion {
@@ -111,6 +112,7 @@ final class WindowManager {
 
     func hide() {
         guard let panel else { return }
+        NSLog("[PArr] Hiding main panel")
         let size = panel.frame.size
         Keys.windowWidth.save(size.width)
         Keys.windowHeight.save(size.height)
@@ -132,6 +134,7 @@ final class WindowManager {
     }
 
     func setPinned(_ pinned: Bool) {
+        NSLog("[PArr] Panel pin state changed to %@", pinned ? "pinned" : "unpinned")
         isPinned = pinned
         panel?.level = pinned ? .statusBar : .normal
         Keys.isPinned.save(pinned)

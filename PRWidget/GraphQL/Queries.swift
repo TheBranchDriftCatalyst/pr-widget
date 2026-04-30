@@ -106,6 +106,62 @@ enum GitHubQueries {
     }
     """
 
+    static let branchList = """
+    query BranchList($owner: String!, $name: String!, $after: String) {
+        repository(owner: $owner, name: $name) {
+            defaultBranchRef {
+                name
+            }
+            refs(refPrefix: "refs/heads/", first: 100, after: $after, orderBy: {field: TAG_COMMIT_DATE, direction: DESC}) {
+                pageInfo {
+                    hasNextPage
+                    endCursor
+                }
+                nodes {
+                    id
+                    name
+                    target {
+                        ... on Commit {
+                            oid
+                            committedDate
+                            author {
+                                user {
+                                    login
+                                }
+                                name
+                            }
+                        }
+                    }
+                    associatedPullRequests(first: 1, orderBy: {field: CREATED_AT, direction: DESC}) {
+                        nodes {
+                            number
+                            url
+                            state
+                            baseRefName
+                        }
+                    }
+                }
+            }
+        }
+    }
+    """
+
+    static let searchRepositories = """
+    query SearchRepos($query: String!) {
+        search(query: $query, type: REPOSITORY, first: 10) {
+            nodes {
+                ... on Repository {
+                    nameWithOwner
+                    url
+                    description
+                    stargazerCount
+                    isArchived
+                }
+            }
+        }
+    }
+    """
+
     static let prDetail = """
     query PRDetailQuery($id: ID!) {
         node(id: $id) {

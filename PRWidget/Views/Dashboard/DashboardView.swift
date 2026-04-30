@@ -1,5 +1,6 @@
 import SwiftUI
 import CatalystSwift
+import TelemetryDeck
 
 struct DashboardView: View {
     @Environment(DashboardStore.self) var store
@@ -9,6 +10,7 @@ struct DashboardView: View {
 
     var onOpenSettings: () -> Void = {}
     var onTogglePin: () -> Void = {}
+    var onOpenBranchCleanup: () -> Void = {}
 
     var body: some View {
         @Bindable var store = store
@@ -23,6 +25,7 @@ struct DashboardView: View {
                     readyToShip: store.state.readyToShipCount,
                     onRefresh: { Task { await store.refresh() } },
                     onTogglePin: onTogglePin,
+                    onOpenBranchCleanup: onOpenBranchCleanup,
                     onOpenSettings: onOpenSettings
                 )
                 GlowDivider()
@@ -40,10 +43,12 @@ struct DashboardView: View {
             .accessibilityIdentifier(AccessibilityID.dashboardView)
             .frame(minWidth: 380, maxWidth: 600, minHeight: 300, maxHeight: 900)
             .background(Catalyst.background)
+            .trackNavigation(path: "dashboard")
             .navigationDestination(for: PullRequest.self) { pr in
                 PRDetailView(pr: pr)
                     .environment(store)
                     .environment(accountManager)
+                    .trackNavigation(path: "prDetail.\(pr.number)")
             }
         }
         .background {

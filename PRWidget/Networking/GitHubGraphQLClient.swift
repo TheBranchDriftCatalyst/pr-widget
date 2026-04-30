@@ -140,6 +140,7 @@ actor GitHubGraphQLClient {
             return (data, httpResponse)
         }
 
+        NSLog("[PArr] ❌ Request failed after %d retries", Self.maxRetries)
         throw lastError ?? APIError.httpError(statusCode: 0)
     }
 
@@ -171,6 +172,9 @@ actor GitHubGraphQLClient {
         // Track rate limit
         if let remaining = httpResponse.value(forHTTPHeaderField: "x-ratelimit-remaining") {
             rateLimitRemaining = Int(remaining) ?? rateLimitRemaining
+            if rateLimitRemaining < 100 {
+                NSLog("[PArr] ⚠️ GitHub API rate limit low: %d remaining", rateLimitRemaining)
+            }
         }
         if let resetStr = httpResponse.value(forHTTPHeaderField: "x-ratelimit-reset"),
            let resetEpoch = TimeInterval(resetStr) {
@@ -196,10 +200,14 @@ actor GitHubGraphQLClient {
                 NSLog("[PArr] Cached ETag for GraphQL request")
             }
             responseData = data
-        case 401: throw APIError.unauthorized
+        case 401:
+            NSLog("[PArr] ❌ GraphQL request unauthorized (401)")
+            throw APIError.unauthorized
         case 403 where rateLimitRemaining == 0:
+            NSLog("[PArr] ❌ GraphQL request rate limited (403), reset at %@", rateLimitResetAt?.description ?? "unknown")
             throw APIError.rateLimited(resetAt: rateLimitResetAt)
         default:
+            NSLog("[PArr] ❌ GraphQL request failed with HTTP %d", httpResponse.statusCode)
             throw APIError.httpError(statusCode: httpResponse.statusCode)
         }
 
@@ -212,6 +220,7 @@ actor GitHubGraphQLClient {
         }
 
         if let errors = envelope.errors, !errors.isEmpty {
+            NSLog("[PArr] ❌ GraphQL response contained %d error(s): %@", errors.count, errors.map(\.message).joined(separator: "; "))
             throw APIError.graphQLErrors(errors)
         }
 
@@ -283,10 +292,14 @@ actor GitHubGraphQLClient {
                 evictCacheIfNeeded()
             }
             responseData = data
-        case 401: throw APIError.unauthorized
+        case 401:
+            NSLog("[PArr] ❌ REST file diffs unauthorized (401)")
+            throw APIError.unauthorized
         case 403:
+            NSLog("[PArr] ❌ REST file diffs rate limited (403)")
             throw APIError.rateLimited(resetAt: nil)
         default:
+            NSLog("[PArr] ❌ REST file diffs failed with HTTP %d", httpResponse.statusCode)
             throw APIError.httpError(statusCode: httpResponse.statusCode)
         }
 

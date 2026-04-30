@@ -2,6 +2,7 @@ import AppKit
 import CatalystSwift
 import Combine
 import SwiftUI
+import TelemetryDeck
 
 @MainActor
 final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
@@ -9,6 +10,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     let windowManager = WindowManager()
     private var settingsWindow: NSWindow?
     private var diffWindow: NSWindow?
+    private var branchCleanupWindow: NSWindow?
+    private(set) lazy var branchCleanupStore = BranchCleanupStore(accountManager: accountManager)
     let accountManager = AccountManager()
     private(set) lazy var dashboardStore = DashboardStore(accountManager: accountManager)
     let aiSettings = AISettings()
@@ -28,11 +31,25 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private enum Keys {
         static let settingsWidth = Persisted<Double>("PArr.settingsWidth", default: 600)
         static let settingsHeight = Persisted<Double>("PArr.settingsHeight", default: 620)
+        static let branchCleanupWidth = Persisted<Double>("PArr.branchCleanup.windowWidth", default: 950)
+        static let branchCleanupHeight = Persisted<Double>("PArr.branchCleanup.windowHeight", default: 600)
         static let textScale = Persisted<Double>("PArr.ui.textScale", default: 1.0)
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         NSLog("[PArr] applicationDidFinishLaunching called")
+
+        // TelemetryDeck — anonymous, privacy-first analytics
+        let tdConfig = TelemetryDeck.Config(appID: "6292246B-4CD0-4EBD-84B1-0E6DAFA4F26B")
+        tdConfig.defaultParameters = { [weak self] in
+            guard let self else { return [:] }
+            return [
+                "accountCount": "\(self.accountManager.accounts.count)",
+                "installSource": "homebrew",
+            ]
+        }
+        TelemetryDeck.initialize(config: tdConfig)
+        TelemetryDeck.signal("appLaunched")
 
         // Migrate from old PRWidget prefix
         DefaultsMigration.migratePrefix(
@@ -85,6 +102,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
                     currentUser: dashboardStore.state.currentUser
                 )
                 updateBadge()
+                NSLog("[PArr] Starting polling scheduler")
                 pollingScheduler.start { [weak self] in
                     guard let self else { return }
                     await self.dashboardStore.refresh()
@@ -191,6 +209,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             onTogglePin: { [weak self] in
                 guard let self else { return }
                 self.windowManager.setPinned(!self.windowManager.isPinned)
+            },
+            onOpenBranchCleanup: { [weak self] in
+                self?.openBranchCleanup()
             }
         )
         .environment(dashboardStore)
@@ -213,9 +234,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     private func setupGlobalHotkey() {
+        NSLog("[PArr] Registering global hotkey")
         hotkeyManager.register { [weak self] in
             self?.togglePanel()
         }
+        NSLog("[PArr] ✓ Global hotkey registered")
     }
 
     /// Observe `filteredPRs` so the badge updates when filters change, not just on refresh.
@@ -251,6 +274,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     private func showStatusMenu() {
         let menu = NSMenu()
 
+        menu.addItem(NSMenuItem(title: "Branch Cleanup...", action: #selector(openBranchCleanup), keyEquivalent: "b"))
         menu.addItem(NSMenuItem(title: "Settings...", action: #selector(openSettings), keyEquivalent: ","))
         menu.addItem(.separator())
         menu.addItem(NSMenuItem(title: "Quit P-Arr", action: #selector(NSApplication.terminate(_:)), keyEquivalent: "q"))
@@ -263,10 +287,13 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
 
     @objc func openSettings() {
         if let settingsWindow, settingsWindow.isVisible {
+            NSLog("[PArr] Settings window already visible, bringing to front")
             settingsWindow.makeKeyAndOrderFront(nil)
             NSApp.activate(ignoringOtherApps: true)
             return
         }
+        NSLog("[PArr] Opening settings window")
+        TelemetryDeck.signal("settingsOpened")
 
         let settingsView = SettingsView()
             .environment(accountManager)
@@ -300,8 +327,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             forName: NSWindow.willCloseNotification,
             object: window,
             queue: .main
-        ) { [weak window] _ in
-            Task { @MainActor in
+        ) { _ in
+            NSLog("[PArr] Settings window closed")
+            Task { @MainActor [weak window] in
                 guard let window else { return }
                 Keys.settingsWidth.save(window.frame.width)
                 Keys.settingsHeight.save(window.frame.height)
@@ -309,6 +337,56 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         }
 
         settingsWindow = window
+    }
+
+    @objc func openBranchCleanup() {
+        if let branchCleanupWindow, branchCleanupWindow.isVisible {
+            NSLog("[PArr] Branch cleanup window already visible, bringing to front")
+            branchCleanupWindow.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return
+        }
+        NSLog("[PArr] Opening branch cleanup window")
+        TelemetryDeck.signal("branchCleanupOpened")
+
+        let cleanupView = BranchCleanupView()
+            .environment(branchCleanupStore)
+            .environment(accountManager)
+            .modifier(TextScaleModifier())
+
+        let w = Keys.branchCleanupWidth.load()
+        let h = Keys.branchCleanupHeight.load()
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: w, height: h),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = "P-Arr Branch Cleanup"
+        window.minSize = NSSize(width: 800, height: 500)
+        window.maxSize = NSSize(width: 1400, height: 1000)
+        window.contentView = NSHostingView(rootView: cleanupView)
+        window.center()
+        window.isReleasedWhenClosed = false
+        window.backgroundColor = NSColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1.0)
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { _ in
+            NSLog("[PArr] Branch cleanup window closed")
+            Task { @MainActor [weak window] in
+                guard let window else { return }
+                Keys.branchCleanupWidth.save(window.frame.width)
+                Keys.branchCleanupHeight.save(window.frame.height)
+            }
+        }
+
+        branchCleanupWindow = window
     }
 
     func openDiffPanel(for pr: PullRequest) {
