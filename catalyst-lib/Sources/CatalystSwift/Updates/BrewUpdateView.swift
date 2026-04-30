@@ -118,5 +118,11 @@ public struct BrewUpdateView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .padding()
+        .task {
+            // Auto-check when the view appears if we haven't checked yet
+            if updater.latestVersion == nil && !updater.isChecking {
+                await updater.checkForUpdate()
+            }
+        }
     }
 }

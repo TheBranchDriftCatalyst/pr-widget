@@ -149,17 +149,17 @@ struct BranchCleanupView: View {
 
                                     if branch.location != .local {
                                         Button("Delete Remote", role: .destructive) {
-                                            Task { try? await store.deleteBranch(branch, remote: true, local: false) }
+                                            deleteBranch(branch, remote: true, local: false)
                                         }
                                     }
                                     if branch.location != .remote {
                                         Button("Delete Local", role: .destructive) {
-                                            Task { try? await store.deleteBranch(branch, remote: false, local: true) }
+                                            deleteBranch(branch, remote: false, local: true)
                                         }
                                     }
                                     if branch.location == .both {
                                         Button("Delete Both", role: .destructive) {
-                                            Task { try? await store.deleteBranch(branch, remote: true, local: true) }
+                                            deleteBranch(branch, remote: true, local: true)
                                         }
                                     }
                                 }
@@ -183,7 +183,7 @@ struct BranchCleanupView: View {
             }
 
             if let error = store.error {
-                BranchCleanupErrorBanner(message: error)
+                ErrorBannerView(message: error)
             }
         }
         .frame(minWidth: 700, idealWidth: 950, maxWidth: 1400, minHeight: 400, idealHeight: 600, maxHeight: 1000)
@@ -211,6 +211,16 @@ struct BranchCleanupView: View {
         .task {
             if !store.workspaceRoot.isEmpty && store.branches.isEmpty {
                 await store.refreshAllBranches()
+            }
+        }
+    }
+
+    private func deleteBranch(_ branch: BranchInfo, remote: Bool, local: Bool) {
+        Task {
+            do {
+                try await store.deleteBranch(branch, remote: remote, local: local)
+            } catch {
+                store.error = "Failed to delete '\(branch.name)': \(error.localizedDescription)"
             }
         }
     }
@@ -254,7 +264,7 @@ struct BranchCleanupHeaderBar: View {
             Spacer()
 
             if !workspaceRoot.isEmpty {
-                Text(workspaceRoot.replacingOccurrences(of: NSHomeDirectory(), with: "~"))
+                Text(workspaceRoot.replacing(NSHomeDirectory(), with: "~"))
                     .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
                     .lineLimit(1)
@@ -331,23 +341,3 @@ struct BranchCleanupFilterBar: View {
     }
 }
 
-// MARK: - Error Banner
-
-struct BranchCleanupErrorBanner: View {
-    let message: String
-
-    var body: some View {
-        HStack(spacing: 6) {
-            Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(Catalyst.yellow)
-            Text(message)
-                .scaledFont(size: 10, design: .monospaced)
-                .foregroundStyle(Catalyst.muted)
-                .lineLimit(2)
-            Spacer()
-        }
-        .padding(.horizontal, 16)
-        .padding(.vertical, 6)
-        .background(Catalyst.surface)
-    }
-}

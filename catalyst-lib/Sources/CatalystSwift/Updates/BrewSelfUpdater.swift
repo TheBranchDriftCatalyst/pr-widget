@@ -65,10 +65,10 @@ public final class BrewSelfUpdater {
     /// Sets ``latestVersion``, ``updateAvailable``, and ``error`` based
     /// on the result. Sets ``isChecking`` to `true` during the check.
     public func checkForUpdate() async {
+        guard !isChecking else { return }
         isChecking = true
         error = nil
-        latestVersion = nil
-        updateAvailable = false
+        // Preserve previous latestVersion/updateAvailable while checking
         defer { isChecking = false }
 
         do {

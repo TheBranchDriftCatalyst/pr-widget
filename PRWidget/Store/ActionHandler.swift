@@ -6,32 +6,17 @@ final class ActionHandler {
     private let client = GitHubGraphQLClient.shared
 
     func approve(pr: PullRequest, comment: String?, token: String, endpoint: URL) async throws {
-        NSLog("[PArr] Approving PR #%d (%@)", pr.number, pr.repository.nameWithOwner)
-        var variables: [String: Any] = [
-            "pullRequestId": pr.id,
-            "event": "APPROVE",
-        ]
-        if let comment, !comment.isEmpty {
-            variables["body"] = comment
-        }
-
-        let _: AddReviewResponse = try await client.execute(
-            query: GitHubMutations.addPullRequestReview,
-            variables: variables,
-            token: token,
-            endpoint: endpoint
-        )
-        NSLog("[PArr] ✓ Approved PR #%d", pr.number)
-        TelemetryDeck.signal("prApproved")
+        try await submitReview(pr: pr, event: "APPROVE", comment: comment, token: token, endpoint: endpoint, signal: "prApproved")
     }
 
     func requestChanges(pr: PullRequest, comment: String, token: String, endpoint: URL) async throws {
-        NSLog("[PArr] Requesting changes on PR #%d (%@)", pr.number, pr.repository.nameWithOwner)
-        let variables: [String: Any] = [
-            "pullRequestId": pr.id,
-            "event": "REQUEST_CHANGES",
-            "body": comment,
-        ]
+        try await submitReview(pr: pr, event: "REQUEST_CHANGES", comment: comment, token: token, endpoint: endpoint, signal: "prChangesRequested")
+    }
+
+    private func submitReview(pr: PullRequest, event: String, comment: String?, token: String, endpoint: URL, signal: String) async throws {
+        NSLog("[PArr] Submitting %@ on PR #%d (%@)", event, pr.number, pr.repository.nameWithOwner)
+        var variables: [String: Any] = ["pullRequestId": pr.id, "event": event]
+        if let comment, !comment.isEmpty { variables["body"] = comment }
 
         let _: AddReviewResponse = try await client.execute(
             query: GitHubMutations.addPullRequestReview,
@@ -39,8 +24,8 @@ final class ActionHandler {
             token: token,
             endpoint: endpoint
         )
-        NSLog("[PArr] ✓ Requested changes on PR #%d", pr.number)
-        TelemetryDeck.signal("prChangesRequested")
+        NSLog("[PArr] ✓ %@ on PR #%d", event, pr.number)
+        TelemetryDeck.signal(signal)
     }
 
     func merge(pr: PullRequest, method: MergeMethod, token: String, endpoint: URL) async throws {

@@ -107,7 +107,7 @@ actor LocalGitService {
 
     /// Extracts "owner/repo" from various git remote URL formats.
     private func extractNameWithOwner(from remoteURL: String) -> String? {
-        let stripped = remoteURL.replacingOccurrences(of: ".git", with: "")
+        let stripped = remoteURL.replacing(".git", with: "")
 
         // SCP-style SSH: git@github.com:owner/repo.git
         if stripped.contains("git@") && !stripped.hasPrefix("ssh://") {

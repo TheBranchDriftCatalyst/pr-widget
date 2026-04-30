@@ -17,28 +17,35 @@ struct SearchResponse: Decodable {
     let nodes: [PRNode?]
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        var nodesContainer = try container.nestedUnkeyedContainer(forKey: .nodes)
-        var decoded: [PRNode?] = []
-        while !nodesContainer.isAtEnd {
-            // Silently skip non-PullRequest union members (e.g., empty objects)
-            if let node = try? nodesContainer.decode(PRNode.self) {
-                decoded.append(node)
-            } else {
-                // Advance past the element we couldn't decode
-                _ = try? nodesContainer.decode(AnyCodableSkip.self)
-            }
-        }
-        self.nodes = decoded
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case nodes
+        self.nodes = try decodeSkippableNodes(from: decoder)
     }
 }
 
 /// Throwaway type used to advance the decoder past an undecodable element.
 private struct AnyCodableSkip: Decodable {}
+
+/// Shared pagination info used across GraphQL connections.
+struct PageInfo: Decodable {
+    let hasNextPage: Bool
+    let endCursor: String?
+}
+
+/// Helper to decode union-type node arrays that may contain non-matching members.
+func decodeSkippableNodes<T: Decodable>(from decoder: Decoder) throws -> [T?] {
+    let container = try decoder.container(keyedBy: CodingKey_Nodes.self)
+    var nodesContainer = try container.nestedUnkeyedContainer(forKey: .nodes)
+    var decoded: [T?] = []
+    while !nodesContainer.isAtEnd {
+        if let node = try? nodesContainer.decode(T.self) {
+            decoded.append(node)
+        } else {
+            _ = try? nodesContainer.decode(AnyCodableSkip.self)
+        }
+    }
+    return decoded
+}
+
+private enum CodingKey_Nodes: String, CodingKey { case nodes }
 
 struct PRNode: Decodable {
     let id: String
@@ -450,13 +457,8 @@ struct DefaultBranchRefNode: Decodable {
 }
 
 struct BranchRefsConnection: Decodable {
-    let pageInfo: BranchPageInfo
+    let pageInfo: PageInfo
     let nodes: [BranchRefNode]
-}
-
-struct BranchPageInfo: Decodable {
-    let hasNextPage: Bool
-    let endCursor: String?
 }
 
 struct BranchRefNode: Decodable {
@@ -498,21 +500,7 @@ struct RepoSearchResultConnection: Decodable {
     let nodes: [RepoSearchNode?]
 
     init(from decoder: Decoder) throws {
-        let container = try decoder.container(keyedBy: CodingKeys.self)
-        var nodesContainer = try container.nestedUnkeyedContainer(forKey: .nodes)
-        var decoded: [RepoSearchNode?] = []
-        while !nodesContainer.isAtEnd {
-            if let node = try? nodesContainer.decode(RepoSearchNode.self) {
-                decoded.append(node)
-            } else {
-                _ = try? nodesContainer.decode(AnyCodableSkip.self)
-            }
-        }
-        self.nodes = decoded
-    }
-
-    private enum CodingKeys: String, CodingKey {
-        case nodes
+        self.nodes = try decodeSkippableNodes(from: decoder)
     }
 }
 

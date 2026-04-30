@@ -3,6 +3,7 @@ import CatalystSwift
 
 struct QuickActionsView: View {
     let pr: PullRequest
+    var isLoading: Bool = false
     let onApprove: () -> Void
     let onMerge: (MergeMethod) -> Void
     let onRequestChanges: (String) -> Void
@@ -14,14 +15,18 @@ struct QuickActionsView: View {
 
     var body: some View {
         HStack(spacing: 8) {
-            Button {
-                onApprove()
-            } label: {
-                Label("Approve", systemImage: "checkmark.circle")
+            Button(action: onApprove) {
+                if isLoading {
+                    ProgressView()
+                        .controlSize(.small)
+                } else {
+                    Label("Approve", systemImage: "checkmark.circle")
+                }
             }
             .buttonStyle(.bordered)
             .tint(Catalyst.cyan)
             .controlSize(.small)
+            .disabled(isLoading)
 
             Button {
                 showMergeOptions = true
@@ -31,7 +36,7 @@ struct QuickActionsView: View {
             .buttonStyle(.bordered)
             .tint(Catalyst.magenta)
             .controlSize(.small)
-            .disabled(!mergeEnabled)
+            .disabled(!mergeEnabled || isLoading)
             .catalystTooltip(mergeEnabled ? "Merge this PR" : "Merging disabled in Settings")
             .popover(isPresented: $showMergeOptions) {
                 MergeOptionsView(
@@ -51,6 +56,7 @@ struct QuickActionsView: View {
             .buttonStyle(.bordered)
             .tint(Catalyst.warning)
             .controlSize(.small)
+            .disabled(isLoading)
             .popover(isPresented: $showRequestChanges) {
                 RequestChangesPopover(comment: $changeComment) {
                     showRequestChanges = false

@@ -14,6 +14,8 @@ struct PRDetailView: View {
     @State private var isLoadingDetail = true
     @State private var detailError: String?
     @State private var actionError: String?
+    @State private var actionSuccess: String?
+    @State private var isPerformingAction = false
 
     @State private var actionHandler = ActionHandler()
 
@@ -209,20 +211,38 @@ struct PRDetailView: View {
         VStack(spacing: 4) {
             QuickActionsView(
                 pr: pr,
+                isLoading: isPerformingAction,
                 onApprove: { Task { await performApprove() } },
                 onMerge: { method in Task { await performMerge(method: method) } },
                 onRequestChanges: { comment in Task { await performRequestChanges(comment: comment) } }
             )
             .padding(12)
 
+            if let actionSuccess {
+                HStack(spacing: 4) {
+                    Image(systemName: "checkmark.circle.fill")
+                    Text(actionSuccess)
+                }
+                .scaledFont(size: 10, weight: .medium, design: .monospaced)
+                .foregroundStyle(Catalyst.cyan)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
+                .transition(.opacity)
+            }
+
             if let actionError {
-                Text(actionError)
-                    .scaledFont(size: 10, design: .monospaced)
-                    .foregroundStyle(Catalyst.red)
-                    .padding(.horizontal, 12)
-                    .padding(.bottom, 8)
+                HStack(spacing: 4) {
+                    Image(systemName: "xmark.circle.fill")
+                    Text(actionError)
+                }
+                .scaledFont(size: 10, weight: .medium, design: .monospaced)
+                .foregroundStyle(Catalyst.red)
+                .padding(.horizontal, 12)
+                .padding(.bottom, 8)
             }
         }
+        .animation(.easeInOut(duration: 0.2), value: actionSuccess)
+        .animation(.easeInOut(duration: 0.2), value: actionError)
     }
 
     // MARK: - Synopsis
@@ -341,36 +361,46 @@ struct PRDetailView: View {
     // MARK: - Actions
 
     private func performApprove() async {
-        guard let (token, endpoint) = accountCredentials else { return }
-        actionError = nil
-        do {
+        await performAction("Approved PR #\(pr.number)") { token, endpoint in
             try await actionHandler.approve(pr: pr, comment: nil, token: token, endpoint: endpoint)
-            await store.refresh()
-        } catch {
-            actionError = error.localizedDescription
         }
     }
 
     private func performMerge(method: MergeMethod) async {
-        guard let (token, endpoint) = accountCredentials else { return }
-        actionError = nil
-        do {
+        await performAction("Merged PR #\(pr.number) via \(method.rawValue.lowercased())") { token, endpoint in
             try await actionHandler.merge(pr: pr, method: method, token: token, endpoint: endpoint)
-            await store.refresh()
-        } catch {
-            actionError = error.localizedDescription
         }
     }
 
     private func performRequestChanges(comment: String) async {
-        guard let (token, endpoint) = accountCredentials else { return }
-        actionError = nil
-        do {
+        await performAction("Requested changes on PR #\(pr.number)") { token, endpoint in
             try await actionHandler.requestChanges(pr: pr, comment: comment, token: token, endpoint: endpoint)
+        }
+    }
+
+    private func performAction(_ successMessage: String, action: (String, URL) async throws -> Void) async {
+        guard let (token, endpoint) = accountCredentials else {
+            actionError = "No account credentials available"
+            return
+        }
+        isPerformingAction = true
+        actionError = nil
+        actionSuccess = nil
+        do {
+            try await action(token, endpoint)
+            actionSuccess = successMessage
             await store.refresh()
+            // Auto-dismiss success after 3 seconds
+            Task {
+                try? await Task.sleep(for: .seconds(3))
+                if actionSuccess == successMessage {
+                    actionSuccess = nil
+                }
+            }
         } catch {
             actionError = error.localizedDescription
         }
+        isPerformingAction = false
     }
 
     private var accountCredentials: (token: String, endpoint: URL)? {

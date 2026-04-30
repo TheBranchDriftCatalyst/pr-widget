@@ -111,7 +111,7 @@ final class BranchCleanupStore {
         for repo in discovered {
             let tracked = TrackedRepository(
                 nameWithOwner: repo.nameWithOwner,
-                url: URL(string: "https://github.com/\(repo.nameWithOwner)")!,
+                url: URL(string: "https://github.com/\(repo.nameWithOwner)") ?? URL(string: "https://github.com")!,
                 accountID: defaultAccount.id
             )
             do {
@@ -181,14 +181,14 @@ final class BranchCleanupStore {
         localBranches = (try? await localGit.listBranches(repoPath: localPath)) ?? []
 
         // Check merge status locally
-        for target in [defaultBranchName, "main", "master"].compactMap({ $0 }) {
-            let merged = try? await getMergedBranches(into: target, repoPath: localPath)
-            if let merged { localMergedToMain.formUnion(merged) }
-        }
-        for target in ["develop", "development"] {
-            let merged = try? await getMergedBranches(into: target, repoPath: localPath)
-            if let merged { localMergedToDevelop.formUnion(merged) }
-        }
+        localMergedToMain = await mergedBranchNames(
+            targets: [defaultBranchName, "main", "master"].compactMap { $0 },
+            from: localBranches, repoPath: localPath
+        )
+        localMergedToDevelop = await mergedBranchNames(
+            targets: ["develop", "development"],
+            from: localBranches, repoPath: localPath
+        )
 
         let localBranchNames = Set(localBranches.map(\.name))
         let remoteBranchNames = Set(remoteBranches.map(\.name))
@@ -376,11 +376,10 @@ final class BranchCleanupStore {
         var result = branches
 
         if !searchQuery.isEmpty {
-            let q = searchQuery.lowercased()
             result = result.filter {
-                $0.name.lowercased().contains(q)
-                || $0.repository.nameWithOwner.lowercased().contains(q)
-                || $0.lastCommitter.lowercased().contains(q)
+                $0.name.localizedStandardContains(searchQuery)
+                || $0.repository.nameWithOwner.localizedStandardContains(searchQuery)
+                || $0.lastCommitter.localizedStandardContains(searchQuery)
             }
         }
 
@@ -441,17 +440,17 @@ final class BranchCleanupStore {
         return .unknown
     }
 
-    private func getMergedBranches(into target: String, repoPath: String) async throws -> Set<String> {
-        let branches = (try? await localGit.listBranches(repoPath: repoPath)) ?? []
-        guard branches.contains(where: { $0.name == target }) else { return [] }
-
-        var merged: Set<String> = []
-        for branch in branches {
-            if await localGit.isMerged(branch: branch.name, into: target, repoPath: repoPath) {
-                merged.insert(branch.name)
+    private func mergedBranchNames(targets: [String], from branches: [LocalBranchInfo], repoPath: String) async -> Set<String> {
+        var result: Set<String> = []
+        for target in targets {
+            guard branches.contains(where: { $0.name == target }) else { continue }
+            for branch in branches {
+                if await localGit.isMerged(branch: branch.name, into: target, repoPath: repoPath) {
+                    result.insert(branch.name)
+                }
             }
         }
-        return merged
+        return result
     }
 
     /// Nonisolated helper to avoid Sendable issues with [String: Any] across actor boundaries.

@@ -286,16 +286,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
     }
 
     @objc func openSettings() {
-        if let settingsWindow, settingsWindow.isVisible {
-            NSLog("[PArr] Settings window already visible, bringing to front")
-            settingsWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
-        }
-        NSLog("[PArr] Opening settings window")
         TelemetryDeck.signal("settingsOpened")
-
-        let settingsView = SettingsView()
+        let view = SettingsView()
             .environment(accountManager)
             .environment(aiSettings)
             .environment(hotkeyManager)
@@ -305,88 +297,32 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
             .environment(iconThemeManager)
             .modifier(TextScaleModifier())
 
-        let w = Keys.settingsWidth.load()
-        let h = Keys.settingsHeight.load()
-
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: w, height: h),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered,
-            defer: false
+        settingsWindow = presentWindow(
+            existing: settingsWindow,
+            title: "P-Arr Settings",
+            rootView: view,
+            minSize: NSSize(width: 520, height: 500),
+            maxSize: NSSize(width: 900, height: 900),
+            sizeKeys: (Keys.settingsWidth, Keys.settingsHeight)
         )
-        window.title = "P-Arr Settings"
-        window.minSize = NSSize(width: 520, height: 500)
-        window.maxSize = NSSize(width: 900, height: 900)
-        window.contentView = NSHostingView(rootView: settingsView)
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            NSLog("[PArr] Settings window closed")
-            Task { @MainActor [weak window] in
-                guard let window else { return }
-                Keys.settingsWidth.save(window.frame.width)
-                Keys.settingsHeight.save(window.frame.height)
-            }
-        }
-
-        settingsWindow = window
     }
 
     @objc func openBranchCleanup() {
-        if let branchCleanupWindow, branchCleanupWindow.isVisible {
-            NSLog("[PArr] Branch cleanup window already visible, bringing to front")
-            branchCleanupWindow.makeKeyAndOrderFront(nil)
-            NSApp.activate(ignoringOtherApps: true)
-            return
-        }
-        NSLog("[PArr] Opening branch cleanup window")
         TelemetryDeck.signal("branchCleanupOpened")
-
-        let cleanupView = BranchCleanupView()
+        let view = BranchCleanupView()
             .environment(branchCleanupStore)
             .environment(accountManager)
             .modifier(TextScaleModifier())
 
-        let w = Keys.branchCleanupWidth.load()
-        let h = Keys.branchCleanupHeight.load()
-
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: w, height: h),
-            styleMask: [.titled, .closable, .resizable, .miniaturizable],
-            backing: .buffered,
-            defer: false
+        branchCleanupWindow = presentWindow(
+            existing: branchCleanupWindow,
+            title: "P-Arr Branch Cleanup",
+            rootView: view,
+            minSize: NSSize(width: 800, height: 500),
+            maxSize: NSSize(width: 1400, height: 1000),
+            sizeKeys: (Keys.branchCleanupWidth, Keys.branchCleanupHeight),
+            backgroundColor: NSColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1.0)
         )
-        window.title = "P-Arr Branch Cleanup"
-        window.minSize = NSSize(width: 800, height: 500)
-        window.maxSize = NSSize(width: 1400, height: 1000)
-        window.contentView = NSHostingView(rootView: cleanupView)
-        window.center()
-        window.isReleasedWhenClosed = false
-        window.backgroundColor = NSColor(red: 0.039, green: 0.039, blue: 0.059, alpha: 1.0)
-        window.makeKeyAndOrderFront(nil)
-        NSApp.activate(ignoringOtherApps: true)
-
-        NotificationCenter.default.addObserver(
-            forName: NSWindow.willCloseNotification,
-            object: window,
-            queue: .main
-        ) { _ in
-            NSLog("[PArr] Branch cleanup window closed")
-            Task { @MainActor [weak window] in
-                guard let window else { return }
-                Keys.branchCleanupWidth.save(window.frame.width)
-                Keys.branchCleanupHeight.save(window.frame.height)
-            }
-        }
-
-        branchCleanupWindow = window
     }
 
     func openDiffPanel(for pr: PullRequest) {
@@ -445,6 +381,58 @@ final class AppDelegate: NSObject, NSApplicationDelegate, ObservableObject {
         window.makeKeyAndOrderFront(nil)
         NSApp.activate(ignoringOtherApps: true)
         diffWindow = window
+    }
+
+    // MARK: - Window Helpers
+
+    /// Shared window presentation: bring existing to front or create new with persisted size.
+    private func presentWindow<Content: View>(
+        existing: NSWindow?,
+        title: String,
+        rootView: Content,
+        minSize: NSSize,
+        maxSize: NSSize,
+        sizeKeys: (width: Persisted<Double>, height: Persisted<Double>),
+        backgroundColor: NSColor? = nil
+    ) -> NSWindow {
+        if let existing, existing.isVisible {
+            NSLog("[PArr] %@ already visible, bringing to front", title)
+            existing.makeKeyAndOrderFront(nil)
+            NSApp.activate(ignoringOtherApps: true)
+            return existing
+        }
+        NSLog("[PArr] Opening %@", title)
+
+        let window = NSWindow(
+            contentRect: NSRect(x: 0, y: 0, width: sizeKeys.width.load(), height: sizeKeys.height.load()),
+            styleMask: [.titled, .closable, .resizable, .miniaturizable],
+            backing: .buffered,
+            defer: false
+        )
+        window.title = title
+        window.minSize = minSize
+        window.maxSize = maxSize
+        window.contentView = NSHostingView(rootView: rootView)
+        window.center()
+        window.isReleasedWhenClosed = false
+        if let backgroundColor { window.backgroundColor = backgroundColor }
+        window.makeKeyAndOrderFront(nil)
+        NSApp.activate(ignoringOtherApps: true)
+
+        NotificationCenter.default.addObserver(
+            forName: NSWindow.willCloseNotification,
+            object: window,
+            queue: .main
+        ) { _ in
+            NSLog("[PArr] %@ closed", title)
+            Task { @MainActor [weak window] in
+                guard let window else { return }
+                sizeKeys.width.save(window.frame.width)
+                sizeKeys.height.save(window.frame.height)
+            }
+        }
+
+        return window
     }
 }
 

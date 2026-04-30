@@ -90,22 +90,18 @@ struct DashboardHeaderBar: View {
             .accessibilityLabel("Refresh")
             .catalystTooltip(polling.isEnabled ? "Auto-refresh every \(intervalLabel)" : "Refresh")
 
-            Button {
-                onTogglePin()
-            } label: {
-                Image(systemName: isPinned ? "pin.fill" : "pin.slash")
-                    .foregroundStyle(isPinned ? Catalyst.cyan : Catalyst.muted)
-            }
-            .buttonStyle(.borderless)
-            .accessibilityIdentifier(AccessibilityID.pinButton)
-            .catalystTooltip(isPinned ? "Unpin window" : "Pin window on top")
+            Button(isPinned ? "Unpin Window" : "Pin Window", systemImage: isPinned ? "pin.fill" : "pin.slash", action: onTogglePin)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(isPinned ? Catalyst.cyan : Catalyst.muted)
+                .accessibilityIdentifier(AccessibilityID.pinButton)
+                .catalystTooltip(isPinned ? "Unpin window" : "Pin window on top")
 
-            Button(action: onOpenBranchCleanup) {
-                Image(systemName: "arrow.triangle.branch")
-                    .foregroundStyle(Catalyst.muted)
-            }
-            .buttonStyle(.borderless)
-            .catalystTooltip("Branch Cleanup")
+            Button("Branch Cleanup", systemImage: "arrow.triangle.branch", action: onOpenBranchCleanup)
+                .labelStyle(.iconOnly)
+                .buttonStyle(.borderless)
+                .foregroundStyle(Catalyst.muted)
+                .catalystTooltip("Branch Cleanup")
 
             Button(action: onOpenSettings) {
                 ZStack(alignment: .topTrailing) {
