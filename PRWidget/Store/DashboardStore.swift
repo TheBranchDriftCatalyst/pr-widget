@@ -513,6 +513,51 @@ final class DashboardStore {
         return diffs
     }
 
+    /// Post a top-level PR comment (issue comment). Returns the new comment.
+    func addComment(to pr: PullRequest, body: String) async throws -> PRComment {
+        guard let account = account(for: pr),
+              let token = accountManager.token(for: account) else {
+            throw APIError.noToken
+        }
+
+        let response: AddCommentResponse = try await client.execute(
+            query: GitHubMutations.addComment,
+            variables: ["subjectId": pr.id, "body": body],
+            token: token,
+            endpoint: account.graphQLEndpoint
+        )
+
+        let node = response.addComment.commentEdge.node
+        let newComment = PRComment(
+            id: node.id,
+            author: PRUser(
+                login: node.author?.login ?? "ghost",
+                avatarURL: node.author?.avatarUrl.flatMap(URL.init)
+            ),
+            body: node.body,
+            createdAt: .parseGitHub(node.createdAt),
+            url: node.url.flatMap(URL.init),
+            isMinimized: node.isMinimized
+        )
+
+        // Append to local detail so the activity feed reflects the new comment
+        if let index = state.pullRequests.firstIndex(where: { $0.id == pr.id }),
+           var detail = state.pullRequests[index].detail {
+            detail = PRDetail(
+                comments: detail.comments + [newComment],
+                timelineEvents: detail.timelineEvents,
+                commits: detail.commits,
+                checkRuns: detail.checkRuns,
+                changedFiles: detail.changedFiles,
+                bodyText: detail.bodyText,
+                reviewThreads: detail.reviewThreads
+            )
+            state.pullRequests[index].detail = detail
+        }
+
+        return newComment
+    }
+
     /// Create a new review comment on a specific diff line. Returns a synthesized
     /// `PRReviewThread` (with a placeholder thread id) so the UI can show it
     /// immediately; the real thread id is reconciled on the next refresh.

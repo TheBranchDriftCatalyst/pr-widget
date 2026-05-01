@@ -3,6 +3,7 @@ import CatalystSwift
 
 struct ActivityFeed: View {
     let activities: [PRActivityItem]
+    var onAddComment: ((String) async throws -> Void)? = nil
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -21,6 +22,32 @@ struct ActivityFeed: View {
                     }
                 }
             }
+
+            if let onAddComment {
+                GlowDivider()
+                    .padding(.vertical, 4)
+                replySection(onAddComment: onAddComment)
+            }
+        }
+    }
+
+    private func replySection(onAddComment: @escaping (String) async throws -> Void) -> some View {
+        VStack(alignment: .leading, spacing: 4) {
+            HStack(spacing: 4) {
+                Image(systemName: "arrowshape.turn.up.left.fill")
+                    .scaledFont(size: 9)
+                    .foregroundStyle(Catalyst.cyan)
+                Text("ADD COMMENT")
+                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
+                    .tracking(1)
+                    .foregroundStyle(Catalyst.muted)
+            }
+            CommentComposer(onSubmit: onAddComment)
+                .background(Catalyst.cyan.opacity(0.05))
+                .overlay(
+                    Rectangle().fill(Catalyst.cyan).frame(width: 2),
+                    alignment: .leading
+                )
         }
     }
 
@@ -28,33 +55,86 @@ struct ActivityFeed: View {
     private func activityRow(_ item: PRActivityItem) -> some View {
         switch item.kind {
         case .comment(let comment):
-            commentRow(comment, date: item.date)
+            collapsibleCommentRow(
+                author: comment.author.login,
+                body: comment.body,
+                date: item.date,
+                dimmed: comment.isMinimized,
+                iconColor: Catalyst.blue
+            )
         case .event(let event):
-            eventRow(event)
+            if event.hasBody {
+                collapsibleCommentRow(
+                    author: event.actor?.login ?? "Someone",
+                    body: event.body ?? "",
+                    date: event.createdAt,
+                    dimmed: false,
+                    iconColor: iconColor(for: event.type),
+                    titleSuffix: event.type == .reviewed ? reviewActionLabel(event.description) : nil
+                )
+            } else {
+                eventRow(event)
+            }
         }
     }
 
-    private func commentRow(_ comment: PRComment, date: Date) -> some View {
-        VStack(alignment: .leading, spacing: 3) {
-            HStack(spacing: 4) {
-                Image(systemName: "text.bubble")
-                    .scaledFont(size: 9)
-                    .foregroundStyle(Catalyst.blue)
-                Text(comment.author.login)
+    /// Extract the action verb from a review description like "ClaPro commented".
+    private func reviewActionLabel(_ desc: String) -> String? {
+        let parts = desc.split(separator: " ", maxSplits: 1)
+        guard parts.count == 2 else { return nil }
+        return String(parts[1])
+    }
+
+    private func collapsibleCommentRow(
+        author: String,
+        body: String,
+        date: Date,
+        dimmed: Bool,
+        iconColor: Color,
+        titleSuffix: String? = nil
+    ) -> some View {
+        CollapsibleCommentBlock(
+            accentColor: iconColor,
+            backgroundColor: iconColor.opacity(0.05),
+            dimmed: dimmed,
+            initiallyExpanded: false
+        ) {
+            HStack(spacing: 6) {
+                Image(systemName: "text.bubble.fill")
+                    .scaledFont(size: 10)
+                    .foregroundStyle(iconColor)
+
+                Text(author)
                     .scaledFont(size: 11, weight: .semibold, design: .monospaced)
                     .foregroundStyle(Catalyst.foreground)
+
+                if let titleSuffix {
+                    Text(titleSuffix)
+                        .scaledFont(size: 10, weight: .medium, design: .monospaced)
+                        .foregroundStyle(Catalyst.muted)
+                }
+
+                Text(body.prefix(80).replacingOccurrences(of: "\n", with: " "))
+                    .scaledFont(size: 11)
+                    .foregroundStyle(Catalyst.subtle)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+
                 Spacer()
+
                 Text(date.relativeTimeString)
                     .scaledFont(size: 10, design: .monospaced)
                     .foregroundStyle(Catalyst.subtle)
             }
-
-            Text(comment.body.prefix(200))
+        } expanded: {
+            Text(body)
                 .scaledFont(size: 12)
                 .foregroundStyle(Catalyst.muted)
-                .lineLimit(3)
+                .textSelection(.enabled)
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(.horizontal, 10)
+                .padding(.vertical, 6)
         }
-        .padding(.vertical, 4)
     }
 
     private func eventRow(_ event: PRTimelineEvent) -> some View {

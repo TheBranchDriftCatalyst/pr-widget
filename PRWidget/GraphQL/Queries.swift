@@ -188,11 +188,15 @@ enum GitHubQueries {
                             author { login avatarUrl }
                             state
                             createdAt
+                            body
+                            url
                         }
                         ... on IssueComment {
                             id
                             author { login avatarUrl }
                             createdAt
+                            body
+                            url
                         }
                         ... on MergedEvent {
                             id

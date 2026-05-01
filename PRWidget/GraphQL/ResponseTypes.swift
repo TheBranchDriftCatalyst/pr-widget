@@ -178,9 +178,11 @@ struct TimelineItemNode: Decodable {
     let createdAt: String?
     let label: TimelineLabelNode?
     let assignee: TimelineAssigneeNode?
+    let body: String?
+    let url: String?
 
     enum CodingKeys: String, CodingKey {
-        case __typename, id, author, actor, state, createdAt, label, assignee
+        case __typename, id, author, actor, state, createdAt, label, assignee, body, url
     }
 }
 
@@ -272,8 +274,19 @@ extension PRDetailNode {
             )
         }
 
+        // Track top-level comment IDs to dedupe IssueComment timeline events
+        // (the timeline IssueComment is the same object as a PRComment node).
+        let topLevelCommentIDs = Set(mappedComments.map(\.id))
+
         let mappedTimeline: [PRTimelineEvent] = timelineItems.nodes.compactMap { node in
             guard let id = node.id, let createdAtStr = node.createdAt else { return nil }
+
+            // Drop IssueComment events that we already render via the top-level
+            // `comments` connection — keeps each comment from appearing twice.
+            if node.__typename == "IssueComment", topLevelCommentIDs.contains(id) {
+                return nil
+            }
+
             let actorUser = node.actor ?? node.author
             let actor = actorUser.map { PRUser(login: $0.login, avatarURL: $0.avatarUrl.flatMap(URL.init)) }
             let actorName = actor?.login ?? "Someone"
@@ -317,7 +330,9 @@ extension PRDetailNode {
                 type: type,
                 actor: actor,
                 createdAt: .parseGitHub(createdAtStr),
-                description: desc
+                description: desc,
+                body: node.body,
+                url: node.url.flatMap(URL.init)
             )
         }
 
@@ -439,6 +454,20 @@ struct AddReviewThreadReplyResponse: Decodable {
 
 struct AddReviewThreadReplyPayload: Decodable {
     let comment: ReviewThreadCommentNode
+}
+
+// MARK: - Add Comment Response
+
+struct AddCommentResponse: Decodable {
+    let addComment: AddCommentPayload
+}
+
+struct AddCommentPayload: Decodable {
+    let commentEdge: AddCommentEdge
+}
+
+struct AddCommentEdge: Decodable {
+    let node: CommentNode
 }
 
 // MARK: - Branch List Response

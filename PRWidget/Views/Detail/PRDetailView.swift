@@ -314,8 +314,17 @@ struct PRDetailView: View {
     // MARK: - Activity
 
     private func activitySection(_ detail: PRDetail) -> some View {
-        ActivityFeed(activities: detail.allActivity)
-            .padding(12)
+        ActivityFeed(
+            activities: detail.allActivity,
+            onAddComment: { body in
+                _ = try await store.addComment(to: pr, body: body)
+                // Refresh local detail so the new comment appears in the feed
+                if let updated = store.state.pullRequests.first(where: { $0.id == pr.id })?.detail {
+                    self.detail = updated
+                }
+            }
+        )
+        .padding(12)
     }
 
     // MARK: - Loading/Error

@@ -72,6 +72,23 @@ enum GitHubMutations {
     }
     """
 
+    static let addComment = """
+    mutation AddComment($subjectId: ID!, $body: String!) {
+        addComment(input: {subjectId: $subjectId, body: $body}) {
+            commentEdge {
+                node {
+                    id
+                    author { login avatarUrl }
+                    body
+                    createdAt
+                    url
+                    isMinimized
+                }
+            }
+        }
+    }
+    """
+
     static let addReviewThreadReply = """
     mutation AddReviewThreadReply($threadId: ID!, $body: String!) {
         addPullRequestReviewThreadReply(input: {pullRequestReviewThreadId: $threadId, body: $body}) {
