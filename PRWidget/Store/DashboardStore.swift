@@ -513,6 +513,78 @@ final class DashboardStore {
         return diffs
     }
 
+    /// Create a new review comment on a specific diff line. Returns a synthesized
+    /// `PRReviewThread` (with a placeholder thread id) so the UI can show it
+    /// immediately; the real thread id is reconciled on the next refresh.
+    func createReviewComment(
+        for pr: PullRequest,
+        path: String,
+        line: Int,
+        side: DiffSide,
+        body: String
+    ) async throws -> PRReviewThread {
+        guard let account = account(for: pr),
+              let token = accountManager.token(for: account) else {
+            throw APIError.noToken
+        }
+
+        let parts = pr.repository.nameWithOwner.split(separator: "/")
+        guard parts.count == 2 else {
+            throw APIError.networkError(
+                NSError(domain: "PRWidget", code: 0, userInfo: [NSLocalizedDescriptionKey: "Bad repo name"])
+            )
+        }
+        let owner = String(parts[0])
+        let repo = String(parts[1])
+
+        // Need head commit SHA — fetch detail if not already loaded.
+        var commitSha = pr.detail?.commits.last?.sha
+        if commitSha == nil {
+            let detail = try await fetchDetail(for: pr)
+            commitSha = detail.commits.last?.sha
+        }
+        guard let commitSha else {
+            throw APIError.networkError(
+                NSError(domain: "PRWidget", code: 0, userInfo: [NSLocalizedDescriptionKey: "No head commit available"])
+            )
+        }
+
+        let restComment = try await client.createReviewComment(
+            owner: owner,
+            repo: repo,
+            number: pr.number,
+            body: body,
+            commitId: commitSha,
+            path: path,
+            line: line,
+            side: side.rawValue,
+            token: token,
+            host: account.host
+        )
+
+        let comment = PRReviewComment(
+            id: restComment.nodeId,
+            author: PRUser(
+                login: restComment.user?.login ?? "ghost",
+                avatarURL: restComment.user?.avatarUrl.flatMap(URL.init)
+            ),
+            body: restComment.body,
+            createdAt: restComment.createdAt,
+            url: restComment.htmlUrl.flatMap(URL.init)
+        )
+
+        return PRReviewThread(
+            id: "local-\(restComment.nodeId)",
+            path: path,
+            line: line,
+            startLine: nil,
+            diffSide: side,
+            isResolved: false,
+            isOutdated: false,
+            comments: [comment]
+        )
+    }
+
     func replyToReviewThread(
         threadId: String,
         body: String,

@@ -305,6 +305,73 @@ actor GitHubGraphQLClient {
 
         return try decoder.decode([RESTFileDiff].self, from: responseData)
     }
+
+    // MARK: - REST Create Review Comment
+
+    /// Create a new pull request review comment on a specific diff line.
+    /// Posts to `POST /repos/{owner}/{repo}/pulls/{number}/comments`.
+    func createReviewComment(
+        owner: String,
+        repo: String,
+        number: Int,
+        body: String,
+        commitId: String,
+        path: String,
+        line: Int,
+        side: String,
+        token: String,
+        host: String = "github.com"
+    ) async throws -> RESTReviewComment {
+        let baseURL: String
+        if host == "github.com" {
+            baseURL = "https://api.github.com"
+        } else {
+            baseURL = "https://\(host)/api/v3"
+        }
+        let urlString = "\(baseURL)/repos/\(owner)/\(repo)/pulls/\(number)/comments"
+
+        guard let url = URL(string: urlString) else {
+            throw APIError.networkError(
+                NSError(domain: "PRWidget", code: 0, userInfo: [NSLocalizedDescriptionKey: "Invalid URL"])
+            )
+        }
+
+        let payload: [String: Any] = [
+            "body": body,
+            "commit_id": commitId,
+            "path": path,
+            "line": line,
+            "side": side,
+        ]
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        request.setValue("application/vnd.github.v3+json", forHTTPHeaderField: "Accept")
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.setValue("PRWidget/0.1", forHTTPHeaderField: "User-Agent")
+        request.httpBody = try JSONSerialization.data(withJSONObject: payload)
+
+        let (data, httpResponse) = try await performRequest(request)
+
+        switch httpResponse.statusCode {
+        case 200, 201:
+            do {
+                return try decoder.decode(RESTReviewComment.self, from: data)
+            } catch {
+                throw APIError.decodingError(error)
+            }
+        case 401:
+            NSLog("[PArr] ❌ Create review comment unauthorized (401)")
+            throw APIError.unauthorized
+        case 403:
+            NSLog("[PArr] ❌ Create review comment forbidden/rate-limited (403)")
+            throw APIError.rateLimited(resetAt: nil)
+        default:
+            NSLog("[PArr] ❌ Create review comment failed with HTTP %d", httpResponse.statusCode)
+            throw APIError.httpError(statusCode: httpResponse.statusCode)
+        }
+    }
 }
 
 private struct GraphQLResponse<T: Decodable>: Decodable {

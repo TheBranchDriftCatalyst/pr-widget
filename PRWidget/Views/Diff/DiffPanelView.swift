@@ -27,9 +27,15 @@ struct DiffPanelView: View {
                     FileListSidebar(files: files, selectedPath: $selectedPath)
 
                     if let selectedPath, let file = files.first(where: { $0.path == selectedPath }) {
-                        DiffContentView(file: file) { threadId, body in
-                            try await replyToThread(threadId: threadId, body: body)
-                        }
+                        DiffContentView(
+                            file: file,
+                            onReply: { threadId, body in
+                                try await replyToThread(threadId: threadId, body: body)
+                            },
+                            onCreateComment: { line, body in
+                                try await createComment(on: file, line: line, body: body)
+                            }
+                        )
                     } else {
                         noSelectionView
                     }
@@ -150,6 +156,37 @@ struct DiffPanelView: View {
         }
 
         isLoading = false
+    }
+
+    private func createComment(on file: PRFileDiff, line: DiffLine, body: String) async throws {
+        let side: DiffSide
+        let lineNum: Int
+        switch line.type {
+        case .deletion:
+            side = .LEFT
+            guard let n = line.oldLineNumber else {
+                throw APIError.networkError(NSError(domain: "PRWidget", code: 0, userInfo: [NSLocalizedDescriptionKey: "Missing line number"]))
+            }
+            lineNum = n
+        case .addition, .context:
+            side = .RIGHT
+            guard let n = line.newLineNumber else {
+                throw APIError.networkError(NSError(domain: "PRWidget", code: 0, userInfo: [NSLocalizedDescriptionKey: "Missing line number"]))
+            }
+            lineNum = n
+        }
+
+        let thread = try await store.createReviewComment(
+            for: pr,
+            path: file.path,
+            line: lineNum,
+            side: side,
+            body: body
+        )
+
+        if let i = files.firstIndex(where: { $0.path == file.path }) {
+            files[i].reviewThreads.append(thread)
+        }
     }
 
     private func replyToThread(threadId: String, body: String) async throws {

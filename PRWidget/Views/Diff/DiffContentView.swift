@@ -4,8 +4,11 @@ import CatalystSwift
 struct DiffContentView: View {
     let file: PRFileDiff
     var onReply: (String, String) async throws -> Void  // (threadId, body)
+    var onCreateComment: (DiffLine, String) async throws -> Void
 
     @State private var hunks: [DiffHunk] = []
+    @State private var hoveredLineId: Int?
+    @State private var composingLineId: Int?
 
     var body: some View {
         ScrollView {
@@ -20,6 +23,12 @@ struct DiffContentView: View {
                         hunkHeader(hunk)
                         ForEach(hunk.lines) { line in
                             diffLineView(line)
+
+                            // New-comment composer for this line (toggled via hover icon)
+                            if composingLineId == line.id {
+                                newCommentComposer(for: line)
+                            }
+
                             // Insert inline comment threads at this line
                             ForEach(threadsAtLine(line)) { thread in
                                 InlineCommentThread(thread: thread) { body in
@@ -33,6 +42,10 @@ struct DiffContentView: View {
         }
         .task(id: file.patch) {
             hunks = file.patch.map { DiffParser.parse($0) } ?? []
+        }
+        .onChange(of: file.id) {
+            composingLineId = nil
+            hoveredLineId = nil
         }
     }
 
@@ -84,6 +97,9 @@ struct DiffContentView: View {
 
     private func diffLineView(_ line: DiffLine) -> some View {
         HStack(spacing: 0) {
+            // Comment gutter
+            commentGutter(for: line)
+
             // Old line number
             Text(line.oldLineNumber.map { "\($0)" } ?? "")
                 .frame(width: 45, alignment: .trailing)
@@ -109,6 +125,55 @@ struct DiffContentView: View {
         .padding(.vertical, 0.5)
         .background(lineBackground(line.type))
         .textSelection(.enabled)
+        .contentShape(Rectangle())
+        .onHover { hovering in
+            if hovering {
+                hoveredLineId = line.id
+            } else if hoveredLineId == line.id {
+                hoveredLineId = nil
+            }
+        }
+    }
+
+    private func commentGutter(for line: DiffLine) -> some View {
+        let isActive = hoveredLineId == line.id || composingLineId == line.id
+        return ZStack {
+            if isActive {
+                Button {
+                    if composingLineId == line.id {
+                        composingLineId = nil
+                    } else {
+                        composingLineId = line.id
+                    }
+                } label: {
+                    Image(systemName: composingLineId == line.id ? "xmark.circle.fill" : "plus.bubble.fill")
+                        .scaledFont(size: 10)
+                        .foregroundStyle(.white)
+                        .frame(width: 16, height: 16)
+                        .background(Catalyst.blue, in: .rect(cornerRadius: 3))
+                }
+                .buttonStyle(.plain)
+                .help(composingLineId == line.id ? "Cancel comment" : "Add comment on this line")
+            }
+        }
+        .frame(width: 20)
+    }
+
+    private func newCommentComposer(for line: DiffLine) -> some View {
+        VStack(alignment: .leading, spacing: 0) {
+            CommentComposer { body in
+                try await onCreateComment(line, body)
+                composingLineId = nil
+            }
+        }
+        .padding(.leading, 20)
+        .background(Catalyst.cyan.opacity(0.05))
+        .overlay(
+            Rectangle()
+                .fill(Catalyst.cyan)
+                .frame(width: 2),
+            alignment: .leading
+        )
     }
 
     private func linePrefix(_ type: DiffLine.LineType) -> String {
