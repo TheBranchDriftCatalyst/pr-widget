@@ -5,6 +5,8 @@ struct ActivityFeed: View {
     let activities: [PRActivityItem]
     var onAddComment: ((String) async throws -> Void)? = nil
 
+    @State private var bottomComposerExpanded = false
+
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
             SectionHeader(title: "ACTIVITY")
@@ -31,23 +33,66 @@ struct ActivityFeed: View {
         }
     }
 
+    @ViewBuilder
     private func replySection(onAddComment: @escaping (String) async throws -> Void) -> some View {
-        VStack(alignment: .leading, spacing: 4) {
-            HStack(spacing: 4) {
-                Image(systemName: "arrowshape.turn.up.left.fill")
-                    .scaledFont(size: 9)
-                    .foregroundStyle(Catalyst.cyan)
-                Text("ADD COMMENT")
-                    .scaledFont(size: 10, weight: .bold, design: .monospaced)
-                    .tracking(1)
-                    .foregroundStyle(Catalyst.muted)
-            }
-            CommentComposer(onSubmit: onAddComment)
+        if bottomComposerExpanded {
+            VStack(alignment: .leading, spacing: 4) {
+                HStack(spacing: 4) {
+                    Image(systemName: "arrowshape.turn.up.left.fill")
+                        .scaledFont(size: 9)
+                        .foregroundStyle(Catalyst.cyan)
+                    Text("REPLY TO PR")
+                        .scaledFont(size: 10, weight: .bold, design: .monospaced)
+                        .tracking(1)
+                        .foregroundStyle(Catalyst.muted)
+                    Spacer()
+                    Button {
+                        withAnimation(.easeInOut(duration: 0.15)) {
+                            bottomComposerExpanded = false
+                        }
+                    } label: {
+                        Image(systemName: "chevron.up")
+                            .scaledFont(size: 9)
+                            .foregroundStyle(Catalyst.subtle)
+                    }
+                    .buttonStyle(.plain)
+                    .help("Collapse")
+                }
+                CommentComposer { body in
+                    try await onAddComment(body)
+                    bottomComposerExpanded = false
+                }
                 .background(Catalyst.cyan.opacity(0.05))
                 .overlay(
                     Rectangle().fill(Catalyst.cyan).frame(width: 2),
                     alignment: .leading
                 )
+            }
+        } else {
+            Button {
+                withAnimation(.easeInOut(duration: 0.15)) {
+                    bottomComposerExpanded = true
+                }
+            } label: {
+                HStack(spacing: 6) {
+                    Image(systemName: "arrowshape.turn.up.left")
+                        .scaledFont(size: 10)
+                        .foregroundStyle(Catalyst.cyan)
+                    Text("Reply to PR…")
+                        .scaledFont(size: 11)
+                        .foregroundStyle(Catalyst.subtle)
+                    Spacer()
+                }
+                .padding(.horizontal, 10)
+                .padding(.vertical, 8)
+                .background(Catalyst.cyan.opacity(0.04), in: .rect(cornerRadius: Catalyst.radiusMD))
+                .overlay(
+                    RoundedRectangle(cornerRadius: Catalyst.radiusMD)
+                        .strokeBorder(Catalyst.cyan.opacity(0.2), lineWidth: 0.5)
+                )
+                .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
         }
     }
 
@@ -127,13 +172,12 @@ struct ActivityFeed: View {
                     .foregroundStyle(Catalyst.subtle)
             }
         } expanded: {
-            Text(body)
-                .scaledFont(size: 12)
-                .foregroundStyle(Catalyst.muted)
-                .textSelection(.enabled)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.horizontal, 10)
-                .padding(.vertical, 6)
+            VStack(alignment: .leading, spacing: 6) {
+                MarkdownText(text: body, fontSize: 12, foregroundColor: Catalyst.muted)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .padding(.horizontal, 10)
+            .padding(.vertical, 6)
         }
     }
 
