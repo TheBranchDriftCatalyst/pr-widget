@@ -2,7 +2,9 @@ import SwiftUI
 import CatalystSwift
 
 /// Renders GitHub-flavored markdown to SwiftUI views. Supports paragraphs,
-/// fenced code blocks, headings, bullet/numbered lists, and blockquotes.
+/// fenced code blocks, headings, bullet/numbered lists, blockquotes, and
+/// pipe tables. Strips HTML comments and common inline HTML tags
+/// (`<sup>`, `<sub>`, `<kbd>`, `<br>`, `<details>`, `<summary>`) before parsing.
 /// Inline formatting (bold, italic, links, inline code) is handled by
 /// `AttributedString(markdown:)`.
 struct MarkdownText: View {
@@ -81,7 +83,52 @@ struct MarkdownText: View {
                     }
                 }
             }
+
+        case .table(let header, let rows):
+            tableView(header: header, rows: rows)
+
+        case .rule:
+            Rectangle()
+                .fill(Catalyst.subtle.opacity(0.3))
+                .frame(height: 1)
+                .padding(.vertical, 2)
         }
+    }
+
+    private func tableView(header: [String], rows: [[String]]) -> some View {
+        let columnCount = max(header.count, rows.map(\.count).max() ?? 0)
+        return VStack(alignment: .leading, spacing: 0) {
+            tableRow(header, columnCount: columnCount, isHeader: true)
+            ForEach(Array(rows.enumerated()), id: \.offset) { _, row in
+                Divider().opacity(0.3)
+                tableRow(row, columnCount: columnCount, isHeader: false)
+            }
+        }
+        .background(Catalyst.background.opacity(0.4), in: .rect(cornerRadius: Catalyst.radiusSM))
+        .overlay(
+            RoundedRectangle(cornerRadius: Catalyst.radiusSM)
+                .strokeBorder(Catalyst.subtle.opacity(0.3), lineWidth: 0.5)
+        )
+    }
+
+    private func tableRow(_ cells: [String], columnCount: Int, isHeader: Bool) -> some View {
+        HStack(alignment: .top, spacing: 0) {
+            ForEach(0..<columnCount, id: \.self) { idx in
+                let cell = idx < cells.count ? cells[idx] : ""
+                inlineText(cell)
+                    .scaledFont(size: fontSize - 1, weight: isHeader ? .semibold : .regular)
+                    .foregroundStyle(isHeader ? Catalyst.foreground : foregroundColor)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 6)
+                    .padding(.vertical, 4)
+                if idx < columnCount - 1 {
+                    Rectangle()
+                        .fill(Catalyst.subtle.opacity(0.3))
+                        .frame(width: 0.5)
+                }
+            }
+        }
+        .background(isHeader ? Catalyst.subtle.opacity(0.1) : Color.clear)
     }
 
     private func headingSize(for level: Int) -> CGFloat {
@@ -111,12 +158,15 @@ enum MarkdownBlock {
     case codeBlock(language: String?, code: String)
     case blockquote(String)
     case list(items: [String], ordered: Bool)
+    case table(header: [String], rows: [[String]])
+    case rule
 }
 
 enum MarkdownParser {
     static func parse(_ source: String) -> [MarkdownBlock] {
+        let cleaned = preprocess(source)
         var blocks: [MarkdownBlock] = []
-        let lines = source.components(separatedBy: "\n")
+        let lines = cleaned.components(separatedBy: "\n")
 
         var i = 0
         var paragraphLines: [String] = []
@@ -168,6 +218,32 @@ enum MarkdownParser {
                     i += 1
                 }
                 blocks.append(.codeBlock(language: lang.isEmpty ? nil : lang, code: codeLines.joined(separator: "\n")))
+                continue
+            }
+
+            // Horizontal rule (---, ***, ___)
+            if isHorizontalRule(trimmed) {
+                flushAll()
+                blocks.append(.rule)
+                i += 1
+                continue
+            }
+
+            // Pipe table: header row followed by separator row of dashes
+            if isTableRow(trimmed),
+               i + 1 < lines.count,
+               isTableSeparator(lines[i + 1].trimmingCharacters(in: .whitespaces)) {
+                flushAll()
+                let header = splitTableRow(trimmed)
+                var rows: [[String]] = []
+                i += 2
+                while i < lines.count {
+                    let next = lines[i].trimmingCharacters(in: .whitespaces)
+                    guard isTableRow(next) else { break }
+                    rows.append(splitTableRow(next))
+                    i += 1
+                }
+                blocks.append(.table(header: header, rows: rows))
                 continue
             }
 
@@ -235,6 +311,61 @@ enum MarkdownParser {
 
         flushAll()
         return blocks
+    }
+
+    /// Strip HTML comments and common inline HTML tags that would otherwise
+    /// render as literal text under `AttributedString`'s markdown parser.
+    static func preprocess(_ source: String) -> String {
+        var s = source
+
+        // HTML comments
+        s = s.replacingOccurrences(of: "<!--[\\s\\S]*?-->", with: "", options: .regularExpression)
+
+        // <br>, <br/>, <br /> → newline
+        s = s.replacingOccurrences(of: "<br\\s*/?>", with: "\n", options: [.regularExpression, .caseInsensitive])
+
+        // Strip wrapping tags but keep inner content (sup/sub/kbd/details/summary/ins/del)
+        let wrapTags = ["sup", "sub", "kbd", "details", "summary", "ins", "del", "u", "small"]
+        for tag in wrapTags {
+            s = s.replacingOccurrences(of: "<\(tag)[^>]*>", with: "", options: [.regularExpression, .caseInsensitive])
+            s = s.replacingOccurrences(of: "</\(tag)>", with: "", options: [.regularExpression, .caseInsensitive])
+        }
+
+        // Strip stray self-closing or unmatched tags from the above set
+        return s
+    }
+
+    private static func isHorizontalRule(_ line: String) -> Bool {
+        guard line.count >= 3 else { return false }
+        let chars = Set(line.replacingOccurrences(of: " ", with: ""))
+        return chars == ["-"] || chars == ["*"] || chars == ["_"]
+    }
+
+    private static func isTableRow(_ line: String) -> Bool {
+        guard line.contains("|") else { return false }
+        // Ignore lines that are just code or text incidentally containing a pipe
+        let stripped = line.hasPrefix("|") ? String(line.dropFirst()) : line
+        return stripped.contains("|")
+    }
+
+    private static func isTableSeparator(_ line: String) -> Bool {
+        guard line.contains("|") else { return false }
+        let cells = splitTableRow(line)
+        guard !cells.isEmpty else { return false }
+        for cell in cells {
+            let trimmed = cell.trimmingCharacters(in: .whitespaces)
+            // valid cells look like ---, :---, ---:, :---:
+            let core = trimmed.trimmingCharacters(in: CharacterSet(charactersIn: ":"))
+            guard !core.isEmpty, core.allSatisfy({ $0 == "-" }) else { return false }
+        }
+        return true
+    }
+
+    private static func splitTableRow(_ line: String) -> [String] {
+        var s = line
+        if s.hasPrefix("|") { s = String(s.dropFirst()) }
+        if s.hasSuffix("|") { s = String(s.dropLast()) }
+        return s.components(separatedBy: "|").map { $0.trimmingCharacters(in: .whitespaces) }
     }
 
     private static func headingMatch(_ line: String) -> (level: Int, text: String)? {

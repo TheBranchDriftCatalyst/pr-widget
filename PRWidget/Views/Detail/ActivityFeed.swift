@@ -6,6 +6,7 @@ struct ActivityFeed: View {
     var onAddComment: ((String) async throws -> Void)? = nil
 
     @State private var bottomComposerExpanded = false
+    @State private var replyingToItemId: String?
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -19,6 +20,9 @@ struct ActivityFeed: View {
             } else {
                 ForEach(activities) { item in
                     activityRow(item)
+                    if replyingToItemId == item.id, let onAddComment {
+                        perCommentComposer(for: item, onAddComment: onAddComment)
+                    }
                     if item.id != activities.last?.id {
                         GlowDivider()
                     }
@@ -30,6 +34,51 @@ struct ActivityFeed: View {
                     .padding(.vertical, 4)
                 replySection(onAddComment: onAddComment)
             }
+        }
+    }
+
+    private func perCommentComposer(
+        for item: PRActivityItem,
+        onAddComment: @escaping (String) async throws -> Void
+    ) -> some View {
+        let author = quotedAuthor(for: item)
+        let originalBody = quotedBody(for: item)
+        return CommentComposer { body in
+            let composed = composeQuotedReply(author: author, original: originalBody, reply: body)
+            try await onAddComment(composed)
+            replyingToItemId = nil
+        }
+        .padding(.leading, 14)
+        .background(Catalyst.cyan.opacity(0.04))
+        .overlay(
+            Rectangle().fill(Catalyst.cyan.opacity(0.6)).frame(width: 2),
+            alignment: .leading
+        )
+    }
+
+    /// Build a reply that quotes the original comment as a markdown blockquote
+    /// so the relationship is visible on GitHub (which has no native threading
+    /// for top-level PR comments).
+    private func composeQuotedReply(author: String?, original: String, reply: String) -> String {
+        let quoted = original
+            .components(separatedBy: "\n")
+            .map { "> \($0)" }
+            .joined(separator: "\n")
+        let header = author.map { "> **@\($0)** wrote:\n>\n" } ?? ""
+        return "\(header)\(quoted)\n\n\(reply)"
+    }
+
+    private func quotedAuthor(for item: PRActivityItem) -> String? {
+        switch item.kind {
+        case .comment(let c): return c.author.login
+        case .event(let e): return e.actor?.login
+        }
+    }
+
+    private func quotedBody(for item: PRActivityItem) -> String {
+        switch item.kind {
+        case .comment(let c): return c.body
+        case .event(let e): return e.body ?? ""
         }
     }
 
@@ -101,21 +150,25 @@ struct ActivityFeed: View {
         switch item.kind {
         case .comment(let comment):
             collapsibleCommentRow(
+                itemId: item.id,
                 author: comment.author.login,
                 body: comment.body,
                 date: item.date,
                 dimmed: comment.isMinimized,
-                iconColor: Catalyst.blue
+                iconColor: Catalyst.blue,
+                canReply: onAddComment != nil
             )
         case .event(let event):
             if event.hasBody {
                 collapsibleCommentRow(
+                    itemId: item.id,
                     author: event.actor?.login ?? "Someone",
                     body: event.body ?? "",
                     date: event.createdAt,
                     dimmed: false,
                     iconColor: iconColor(for: event.type),
-                    titleSuffix: event.type == .reviewed ? reviewActionLabel(event.description) : nil
+                    titleSuffix: event.type == .reviewed ? reviewActionLabel(event.description) : nil,
+                    canReply: onAddComment != nil
                 )
             } else {
                 eventRow(event)
@@ -131,12 +184,14 @@ struct ActivityFeed: View {
     }
 
     private func collapsibleCommentRow(
+        itemId: String,
         author: String,
         body: String,
         date: Date,
         dimmed: Bool,
         iconColor: Color,
-        titleSuffix: String? = nil
+        titleSuffix: String? = nil,
+        canReply: Bool
     ) -> some View {
         CollapsibleCommentBlock(
             accentColor: iconColor,
@@ -172,9 +227,37 @@ struct ActivityFeed: View {
                     .foregroundStyle(Catalyst.subtle)
             }
         } expanded: {
-            VStack(alignment: .leading, spacing: 6) {
+            VStack(alignment: .leading, spacing: 4) {
                 MarkdownText(text: body, fontSize: 12, foregroundColor: Catalyst.muted)
                     .frame(maxWidth: .infinity, alignment: .leading)
+
+                if canReply {
+                    HStack {
+                        Spacer()
+                        Button {
+                            withAnimation(.easeInOut(duration: 0.15)) {
+                                replyingToItemId = (replyingToItemId == itemId) ? nil : itemId
+                            }
+                        } label: {
+                            HStack(spacing: 4) {
+                                Image(systemName: "arrowshape.turn.up.left")
+                                    .scaledFont(size: 9)
+                                Text(replyingToItemId == itemId ? "Cancel" : "Reply")
+                                    .scaledFont(size: 10, weight: .medium, design: .monospaced)
+                            }
+                            .foregroundStyle(replyingToItemId == itemId ? Catalyst.subtle : Catalyst.cyan)
+                            .padding(.horizontal, 8)
+                            .padding(.vertical, 3)
+                            .background(
+                                (replyingToItemId == itemId ? Catalyst.subtle : Catalyst.cyan)
+                                    .opacity(0.1),
+                                in: .rect(cornerRadius: Catalyst.radiusSM)
+                            )
+                        }
+                        .buttonStyle(.plain)
+                        .help("Reply to this comment")
+                    }
+                }
             }
             .padding(.horizontal, 10)
             .padding(.vertical, 6)
