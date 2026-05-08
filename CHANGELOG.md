@@ -2,6 +2,17 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [1.3.0] - 2026-05-08
+
+### Bug Fixes
+
+- Strip HTML tags, render tables, per-comment reply in activity feed
+
+### Features
+
+- Inline comment workflow with resolved/unresolved indicators
+- Markdown rendering, per-comment reply, collapsible composer
+
 ## [1.2.2] - 2026-05-01
 
 ### Features
