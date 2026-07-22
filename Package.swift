@@ -9,7 +9,7 @@ let package = Package(
     ],
     dependencies: [
         .package(name: "catalyst-swift", path: "catalyst-lib"),
-        .package(url: "https://github.com/TelemetryDeck/SwiftSDK", from: "2.0.0"),
+        .package(url: "https://github.com/TelemetryDeck/SwiftSDK", from: "2.12.0"),
     ],
     targets: [
         .executableTarget(

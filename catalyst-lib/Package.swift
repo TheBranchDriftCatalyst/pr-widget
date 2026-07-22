@@ -8,7 +8,7 @@ let package = Package(
         .library(name: "CatalystSwift", targets: ["CatalystSwift"]),
     ],
     dependencies: [
-        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.4.3"),
+        .package(url: "https://github.com/swiftlang/swift-docc-plugin", from: "1.5.0"),
     ],
     targets: [
         .target(
