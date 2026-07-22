@@ -330,9 +330,27 @@ struct PRRowContent: View {
     let onTogglePin: () -> Void
     @Environment(AccountManager.self) private var accountManager
     @Environment(DashboardStore.self) private var store
+    @State private var actionHandler = ActionHandler()
+    @State private var approveTask: Task<Void, Never>?
 
     private var isOwnedByMe: Bool {
         pr.author.login == store.state.currentUser
+    }
+
+    private func performApprove() {
+        guard let account = store.account(for: pr),
+              let token = accountManager.token(for: account) else { return }
+        let endpoint = account.graphQLEndpoint
+        let handler = actionHandler
+
+        approveTask = Task {
+            do {
+                try await handler.approve(pr: pr, comment: nil, token: token, endpoint: endpoint)
+                await store.refresh()
+            } catch {
+                NSLog("[PArr] Approve from context menu failed: %@", error.localizedDescription)
+            }
+        }
     }
 
     // MARK: - Icon Stack
@@ -476,6 +494,12 @@ struct PRRowContent: View {
         .contextMenu {
             Button(isPinned ? "Unpin" : "Pin") {
                 onTogglePin()
+            }
+            if !isOwnedByMe {
+                Divider()
+                Button("Approve") {
+                    performApprove()
+                }
             }
             Divider()
             Button("Open in Browser") {
