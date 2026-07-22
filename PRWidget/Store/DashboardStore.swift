@@ -394,7 +394,7 @@ final class DashboardStore {
         state = newState
 
         NSLog("[PArr] ✓ Refresh complete — %d PRs total, user: %@", allPRs.count, currentUser)
-        TelemetryDeck.signal("dashboardRefreshed", parameters: ["prCount": "\(allPRs.count)"])
+        // TelemetryDeck.signal("dashboardRefreshed", parameters: ["prCount": "\(allPRs.count)"]) // disabled: too high volume, eats telemetry quota
         if !errors.isEmpty {
             NSLog("[PArr] ⚠️ Refresh had %d error(s)", errors.count)
         }
