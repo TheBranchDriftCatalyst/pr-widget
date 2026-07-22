@@ -1,6 +1,33 @@
 {
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "extends": [
-    "config:recommended"
+    "config:recommended",
+    ":dependencyDashboard",
+    ":semanticCommits",
+    ":semanticPrefixFixDepsChoreOthers",
+    "group:allNonMajor",
+    "schedule:weekly"
+  ],
+  "timezone": "America/Los_Angeles",
+  "prConcurrentLimit": 3,
+  "prHourlyLimit": 2,
+  "labels": ["dependencies"],
+  "ignorePaths": [
+    "catalyst-cask/**",
+    ".build/**",
+    "**/.build/**"
+  ],
+  "packageRules": [
+    {
+      "description": "Batch all non-major SPM bumps into one weekly PR",
+      "matchManagers": ["swift"],
+      "matchUpdateTypes": ["minor", "patch"],
+      "groupName": "swift dependencies"
+    },
+    {
+      "description": "Isolate majors so each gets its own review",
+      "matchUpdateTypes": ["major"],
+      "labels": ["dependencies", "major-update"]
+    }
   ]
 }
