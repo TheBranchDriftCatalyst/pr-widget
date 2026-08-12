@@ -2,6 +2,22 @@
 
 All notable changes to PR Widget will be documented in this file.
 
+## [1.4.0] - 2026-08-12
+
+### Bug Fixes
+
+- Disable dashboardRefreshed telemetry signal
+- **deps**: Bump SPM manifest floors
+
+### Features
+
+- Add Approve action to PR row context menu
+
+### Miscellaneous
+
+- Configure Renovate (#1)
+- Update renovate config
+
 ## [1.3.0] - 2026-05-08
 
 ### Bug Fixes
